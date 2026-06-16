@@ -1,0 +1,6 @@
+.env
+.agents
+.codex
+.next
+
+node_modules
