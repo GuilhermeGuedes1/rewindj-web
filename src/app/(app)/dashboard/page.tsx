@@ -2,7 +2,9 @@
 
 import { CalendarCheck, Clock3, Music2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import type { Event } from "@/types/event";
+import type { Artist } from "@/types/artist";
 
 import { EventCard } from "@/components/orbit/event-card";
 import { PageHeader } from "@/components/orbit/page-header";
@@ -11,69 +13,146 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  getMyArtistProfileService,
+  listArtistsService,
+  listMyArtistEventsService,
+} from "@/services/artists.service";
+import { listEventsService } from "@/services/events.service";
 
-const mockNextEvent: Event = {
-  id: "1",
-  title: "Casamento Mariana & João",
-  eventDate: "2026-08-15",
-  startTime: "20:00",
-  endTime: "02:00",
-  venueName: "Copacabana Palace",
-  address: "Av. Atlântica, 1702",
-  city: "Rio de Janeiro",
-  state: "RJ",
-  notes: "Montagem às 16h. Cliente pediu open format até meia-noite.",
-  artistId: "artist-1",
-  clientId: "client-1",
-  clientName: "Mariana Souza",
-  clientPhone: "+5521999999999",
-  clientEmail: "mariana@email.com",
-  organizationId: "org-1",
-};
+function isFutureEvent(event: Event) {
+  return new Date(event.eventDate).getTime() >= new Date().setHours(0, 0, 0, 0);
+}
+
+function sortByEventDate(first: Event, second: Event) {
+  return (
+    new Date(first.eventDate).getTime() - new Date(second.eventDate).getTime()
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [artists, setArtists] = useState<Artist[]>([]);
+  const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const isArtist = user?.role === "ARTIST";
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        if (isArtist) {
+          const [profileData, eventData] = await Promise.all([
+            getMyArtistProfileService(),
+            listMyArtistEventsService(),
+          ]);
+
+          setArtistProfile(profileData);
+          setEvents(eventData);
+          return;
+        }
+
+        const [eventData, artistData] = await Promise.all([
+          listEventsService(),
+          listArtistsService(),
+        ]);
+
+        setEvents(eventData);
+        setArtists(artistData);
+      } catch (error) {
+        console.error("Erro ao buscar dados do dashboard:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadDashboard();
+  }, [isArtist]);
+
+  const upcomingEvents = useMemo(
+    () => events.filter(isFutureEvent).sort(sortByEventDate),
+    [events],
+  );
+
+  const pastEvents = useMemo(
+    () =>
+      events
+        .filter((event) => !isFutureEvent(event))
+        .sort((first, second) => sortByEventDate(second, first)),
+    [events],
+  );
+
+  const nextEvent = upcomingEvents[0];
 
   return (
     <div>
       <PageHeader
         eyebrow="Orbit command"
         title={`Boa noite${user ? `, ${user.name}` : ""}.`}
-        description="Uma visão rápida da sua operação: agenda, artistas, convites e eventos criados com IA."
+        description={
+          isArtist
+            ? "Seu perfil artístico, próximos eventos e histórico dentro da organização."
+            : "Uma visão rápida da sua operação: agenda, artistas, convites e eventos criados com IA."
+        }
         action={
-          <Button asChild>
-            <Link href="/events/create">Criar evento</Link>
-          </Button>
+          isArtist ? null : (
+            <Button asChild>
+              <Link href="/events/create">Criar evento</Link>
+            </Button>
+          )
         }
       />
 
       <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={CalendarCheck}
-          label="Eventos ativos"
-          value="24"
-          detail="6 acontecendo este mês"
+          label={isArtist ? "Próximos eventos" : "Eventos ativos"}
+          value={isLoading ? "--" : String(upcomingEvents.length)}
+          detail={
+            nextEvent
+              ? `${nextEvent.city}, ${nextEvent.state}`
+              : "Nenhum evento futuro"
+          }
         />
 
         <StatCard
           icon={Music2}
-          label="Artistas"
-          value="12"
-          detail="8 disponíveis"
+          label={isArtist ? "Perfil" : "Artistas"}
+          value={
+            isArtist
+              ? artistProfile?.stageName || artistProfile?.fullName
+                ? "1"
+                : "--"
+              : String(artists.length)
+          }
+          detail={
+            isArtist
+              ? artistProfile?.stageName ||
+                artistProfile?.fullName ||
+                "Carregando perfil"
+              : "Na organização"
+          }
         />
 
         <StatCard
           icon={Clock3}
           label="Próximo evento"
-          value="15 AGO"
-          detail="Copacabana Palace"
+          value={
+            nextEvent
+              ? new Intl.DateTimeFormat("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                }).format(new Date(nextEvent.eventDate))
+              : "--"
+          }
+          detail={nextEvent?.venueName ?? "Agenda livre"}
         />
 
         <StatCard
           icon={Sparkles}
-          label="Eventos via IA"
-          value="31"
-          detail="92% preenchidos automaticamente"
+          label={isArtist ? "Histórico" : "Eventos via IA"}
+          value={isArtist ? String(pastEvents.length) : String(events.length)}
+          detail={isArtist ? "Eventos realizados" : "Eventos cadastrados"}
         />
       </section>
 
@@ -89,7 +168,13 @@ export default function DashboardPage() {
             </Button>
           </div>
 
-          <EventCard event={mockNextEvent} featured />
+          {nextEvent ? (
+            <EventCard event={nextEvent} featured />
+          ) : (
+            <div className="orbit-shell rounded-lg p-6 text-muted-foreground">
+              Nenhum evento futuro encontrado.
+            </div>
+          )}
         </div>
 
         <Card className="orbit-shell overflow-hidden">
@@ -97,11 +182,11 @@ export default function DashboardPage() {
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <Badge variant="silver" className="mb-3">
-                  AI stage
+                  {isArtist ? "Perfil artístico" : "AI stage"}
                 </Badge>
 
                 <h2 className="text-xl font-semibold tracking-normal">
-                  Brief inteligente
+                  {isArtist ? "Meus dados" : "Brief inteligente"}
                 </h2>
               </div>
 
@@ -109,12 +194,20 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
-              {[
-                "WhatsApp → Evento preenchido automaticamente.",
-                "Identificação automática de cliente, artista e local.",
-                "Detecção de informações ausentes antes da confirmação.",
-                "Sugestão de horários, observações e briefing operacional.",
-              ].map((item) => (
+              {(isArtist
+                ? [
+                    artistProfile?.fullName ?? "Nome não informado",
+                    artistProfile?.email ?? "Email não informado",
+                    artistProfile?.phone ?? "Telefone não informado",
+                    artistProfile?.pixKey ?? "Pix não informado",
+                  ]
+                : [
+                    "WhatsApp -> Evento preenchido automaticamente.",
+                    "Identificação automática de cliente, artista e local.",
+                    "Detecção de informações ausentes antes da confirmação.",
+                    "Sugestão de horários, observações e briefing operacional.",
+                  ]
+              ).map((item) => (
                 <div
                   key={item}
                   className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">

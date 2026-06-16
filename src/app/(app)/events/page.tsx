@@ -8,18 +8,24 @@ import { EventCard } from "@/components/orbit/event-card";
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { listMyArtistEventsService } from "@/services/artists.service";
 import { listEventsService } from "@/services/events.service";
 import type { Event } from "@/types/event";
 
 export default function EventsPage() {
+  const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const isArtist = user?.role === "ARTIST";
 
   useEffect(() => {
     async function loadEvents() {
       try {
-        const data = await listEventsService();
+        const data = isArtist
+          ? await listMyArtistEventsService()
+          : await listEventsService();
         setEvents(data);
       } catch (error) {
         console.error("Erro ao buscar eventos:", error);
@@ -29,7 +35,7 @@ export default function EventsPage() {
     }
 
     loadEvents();
-  }, []);
+  }, [isArtist]);
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -44,8 +50,10 @@ export default function EventsPage() {
         event.venueName,
         event.city,
         event.state,
-        event.client?.name ?? "",
-        event.artist?.name ?? "",
+        event.client.name,
+        event.client.companyName ?? "",
+        event.artist.fullName,
+        event.artist.stageName ?? "",
       ]
         .join(" ")
         .toLowerCase()
@@ -57,15 +65,21 @@ export default function EventsPage() {
     <div>
       <PageHeader
         eyebrow="Agenda"
-        title="Eventos"
-        description="Uma lista visual para acompanhar datas, locais, horários e contexto antes da noite começar."
+        title={isArtist ? "Minha agenda" : "Eventos"}
+        description={
+          isArtist
+            ? "Seus próximos eventos e histórico em uma lista visual para acompanhar datas, locais e horários."
+            : "Uma lista visual para acompanhar datas, locais, horários e contexto antes da noite começar."
+        }
         action={
-          <Button asChild>
-            <Link href="/events/create">
-              <Plus className="size-4" />
-              Novo evento
-            </Link>
-          </Button>
+          isArtist ? null : (
+            <Button asChild>
+              <Link href="/events/create">
+                <Plus className="size-4" />
+                Novo evento
+              </Link>
+            </Button>
+          )
         }
       />
 

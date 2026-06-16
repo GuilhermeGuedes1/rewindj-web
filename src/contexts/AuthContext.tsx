@@ -6,8 +6,10 @@ import { api } from "@/libs/axios";
 import {
   AuthUser,
   LoginData,
+  RegisterData,
   loginService,
   profileService,
+  registerService,
 } from "@/services/auth.service";
 
 type AuthContextData = {
@@ -16,6 +18,7 @@ type AuthContextData = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 };
 
@@ -48,6 +51,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(profile);
 
     router.push("/dashboard");
+  }
+
+  async function register(data: RegisterData) {
+    await registerService(data);
+    await login({
+      email: data.email,
+      password: data.password,
+    });
   }
 
   function logout() {
@@ -98,6 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading,
         isAuthenticated,
         login,
+        register,
         logout,
       }}>
       {children}

@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
 import {
   ArrowLeft,
   CalendarPlus,
@@ -19,11 +20,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
 import { eventSchema, type EventFormValues } from "@/schemas/event.schema";
-import {
-  createEventService,
-  generateEventDraftService,
-} from "@/services/events.service";
+import { aiService } from "@/services/ai.service";
+import { createEventService } from "@/services/events.service";
 import { listArtistsService } from "@/services/artists.service";
 import type { Artist } from "@/types/artist";
 
@@ -69,6 +69,7 @@ function normalizeName(value?: string | null) {
 
 export default function NewEventPage() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artistsLoading, setArtistsLoading] = useState(true);
@@ -92,19 +93,29 @@ export default function NewEventPage() {
       eventDate: "",
       startTime: "",
       endTime: "",
+      setDuration: "",
       venueName: "",
       address: "",
       city: "",
       state: "",
+      paymentDate: "",
+      paymentMethod: "",
+      hasContract: false,
       artistId: "",
       clientName: "",
       clientPhone: "",
       clientEmail: "",
+      clientCompanyName: "",
       notes: "",
     },
   });
 
   useEffect(() => {
+    if (user?.role === "ARTIST") {
+      router.replace("/dashboard");
+      return;
+    }
+
     async function loadArtists() {
       try {
         const data = await listArtistsService();
@@ -117,7 +128,7 @@ export default function NewEventPage() {
     }
 
     loadArtists();
-  }, []);
+  }, [router, user?.role]);
 
   async function handleGenerateDraft() {
     setAiError(null);
@@ -131,7 +142,7 @@ export default function NewEventPage() {
     try {
       setAiLoading(true);
 
-      const draft = await generateEventDraftService(aiMessage);
+      const draft = await aiService.generateEventDraft(aiMessage);
 
       setValue("title", draft.title ?? "", { shouldValidate: true });
       setValue("eventDate", normalizeDate(draft.eventDate), {
@@ -143,15 +154,30 @@ export default function NewEventPage() {
       setValue("endTime", normalizeTime(draft.endTime), {
         shouldValidate: true,
       });
+      setValue("setDuration", draft.setDuration ?? "", {
+        shouldValidate: true,
+      });
       setValue("venueName", draft.venueName ?? "", { shouldValidate: true });
       setValue("address", draft.address ?? "", { shouldValidate: true });
       setValue("city", draft.city ?? "", { shouldValidate: true });
       setValue("state", draft.state ?? "", { shouldValidate: true });
+      setValue("paymentDate", normalizeDate(draft.paymentDate), {
+        shouldValidate: true,
+      });
+      setValue("paymentMethod", draft.paymentMethod ?? "", {
+        shouldValidate: true,
+      });
+      setValue("hasContract", draft.hasContract ?? false, {
+        shouldValidate: true,
+      });
       setValue("clientName", draft.clientName ?? "", { shouldValidate: true });
       setValue("clientPhone", draft.clientPhone ?? "", {
         shouldValidate: true,
       });
       setValue("clientEmail", draft.clientEmail ?? "", {
+        shouldValidate: true,
+      });
+      setValue("clientCompanyName", draft.clientCompanyName ?? "", {
         shouldValidate: true,
       });
       setValue("notes", draft.notes ?? "", { shouldValidate: true });
@@ -160,7 +186,7 @@ export default function NewEventPage() {
 
       const matchedArtist = artists.find((artist) => {
         const normalizedArtist = normalizeName(
-          `${artist.name} ${artist.lastName ?? ""}`,
+          `${artist.fullName} ${artist.stageName ?? ""}`,
         );
 
         return (
@@ -188,24 +214,33 @@ export default function NewEventPage() {
     try {
       await createEventService({
         title: values.title,
-        eventDate: new Date(values.eventDate).toISOString(),
+        eventDate: values.eventDate,
         startTime: values.startTime,
         endTime: values.endTime,
+        setDuration: values.setDuration || null,
         venueName: values.venueName,
         address: values.address,
         city: values.city,
         state: values.state,
+        paymentDate: values.paymentDate,
+        paymentMethod: values.paymentMethod || null,
+        hasContract: values.hasContract,
         notes: values.notes ?? "",
-        artistId: values.artistId ?? "",
-        clientName: values.clientName ?? "",
+        artistId: values.artistId,
+        clientName: values.clientName,
         clientPhone: values.clientPhone ?? "",
         clientEmail: values.clientEmail ?? "",
+        clientCompanyName: values.clientCompanyName ?? "",
       });
 
       router.push("/events");
-    } catch (error: any) {
-      console.error(error.response?.data);
-      console.error(error.response?.data?.message);
+    } catch (error) {
+      const message = isAxiosError(error)
+        ? error.response?.data?.message
+        : null;
+
+      console.error(isAxiosError(error) ? error.response?.data : error);
+      setError(message ?? "Nao foi possivel criar o evento agora.");
     }
   }
 
@@ -320,6 +355,49 @@ export default function NewEventPage() {
               </div>
             </div>
 
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="setDuration">Duração do set</Label>
+                <Input
+                  id="setDuration"
+                  placeholder="2h, 90min..."
+                  {...register("setDuration")}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paymentDate">Data de pagamento</Label>
+                <Input
+                  id="paymentDate"
+                  type="date"
+                  {...register("paymentDate")}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">Forma de pagamento</Label>
+                <Input
+                  id="paymentMethod"
+                  placeholder="Pix, boleto, transferencia..."
+                  {...register("paymentMethod")}
+                />
+              </div>
+
+              <label
+                htmlFor="hasContract"
+                className="flex h-12 items-center gap-3 self-end rounded-md border border-input bg-muted/55 px-4 py-2 text-sm text-foreground shadow-sm">
+                <input
+                  id="hasContract"
+                  type="checkbox"
+                  className="size-4 accent-primary"
+                  {...register("hasContract")}
+                />
+                Contrato confirmado
+              </label>
+            </div>
+
             <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="space-y-2">
                 <Label htmlFor="venueName">Local</Label>
@@ -407,7 +485,7 @@ export default function NewEventPage() {
 
                   {artists.map((artist) => (
                     <option key={artist.id} value={artist.id}>
-                      {artist.name} {artist.lastName ?? ""}
+                      {artist.stageName || artist.fullName}
                     </option>
                   ))}
                 </select>
@@ -465,6 +543,15 @@ export default function NewEventPage() {
                   </p>
                 ) : null}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="clientCompanyName">Empresa do cliente</Label>
+              <Input
+                id="clientCompanyName"
+                placeholder="Opcional"
+                {...register("clientCompanyName")}
+              />
             </div>
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}

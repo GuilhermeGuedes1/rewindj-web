@@ -2,21 +2,30 @@
 
 import { Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { ArtistCard } from "@/components/orbit/artist-card";
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import { listArtistsService } from "@/services/artists.service";
 import { Artist } from "@/types/artist";
 
 export default function ArtistsPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [artists, setArtists] = useState<Artist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    if (user?.role === "ARTIST") {
+      router.replace("/dashboard");
+      return;
+    }
+
     async function loadArtists() {
       try {
         const data = await listArtistsService();
@@ -29,7 +38,7 @@ export default function ArtistsPage() {
     }
 
     loadArtists();
-  }, []);
+  }, [router, user?.role]);
 
   const filteredArtists = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -39,7 +48,12 @@ export default function ArtistsPage() {
     }
 
     return artists.filter((artist) =>
-      [artist.name, artist.lastName ?? "", artist.email]
+      [
+        artist.fullName,
+        artist.stageName ?? "",
+        artist.email,
+        artist.phone ?? "",
+      ]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),

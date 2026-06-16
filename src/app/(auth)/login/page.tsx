@@ -31,10 +31,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "alex@orbit.local",
-      password: "orbit123",
-    },
   });
 
   async function onSubmit(values: LoginFormValues) {
@@ -67,7 +63,12 @@ export default function LoginPage() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" autoComplete="email" {...field} />
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="user@email.com"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -84,6 +85,7 @@ export default function LoginPage() {
                     <Input
                       type="password"
                       autoComplete="current-password"
+                      placeholder="******"
                       {...field}
                     />
                   </FormControl>

@@ -4,27 +4,34 @@ export interface Event {
   eventDate: string;
   startTime: string;
   endTime: string;
+  setDuration?: string | null;
   venueName: string;
   address: string;
   city: string;
   state: string;
-  fee?: number | null;
+  paymentDate?: string | null;
+  paymentMethod?: string | null;
+  hasContract?: boolean | null;
   notes?: string | null;
+
+  artist: {
+    id: string;
+    fullName: string;
+    stageName?: string | null;
+    email: string;
+    phone?: string | null;
+  };
 
   client: {
     id: string;
     name: string;
-    phone: string;
+    companyName?: string | null;
+    phone?: string | null;
     email?: string | null;
   };
 
-  artist: {
-    id: string;
-    name: string;
-    lastName?: string | null;
-    email: string;
-    role: string;
-  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateEventPayload {
@@ -32,13 +39,18 @@ export interface CreateEventPayload {
   eventDate: string;
   startTime: string;
   endTime: string;
+  setDuration?: string | null;
   venueName: string;
   address: string;
   city: string;
   state: string;
-  notes?: string;
-  artistId?: string;
-  clientName?: string;
-  clientPhone?: string;
-  clientEmail?: string;
+  paymentDate?: string | null;
+  paymentMethod?: string | null;
+  hasContract?: boolean;
+  notes?: string | null;
+  artistId: string;
+  clientName: string;
+  clientPhone?: string | null;
+  clientEmail?: string | null;
+  clientCompanyName?: string | null;
 }

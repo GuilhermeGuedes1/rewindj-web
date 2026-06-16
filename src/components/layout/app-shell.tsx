@@ -20,7 +20,12 @@ const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/events", label: "Eventos", icon: CalendarDays },
   { href: "/artists", label: "Artistas", icon: Mic2 },
-  { href: "/events/new", label: "Novo", icon: Plus },
+  { href: "/events/create", label: "Novo", icon: Plus },
+];
+
+const artistNavItems = [
+  { href: "/dashboard", label: "Perfil", icon: LayoutDashboard },
+  { href: "/events", label: "Eventos", icon: CalendarDays },
 ];
 
 function isNavItemActive(pathname: string, href: string) {
@@ -35,6 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const visibleNavItems = user?.role === "ARTIST" ? artistNavItems : navItems;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -66,7 +72,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
 
               <nav className="space-y-2">
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon;
                   const active = isNavItemActive(pathname, item.href);
 
@@ -125,8 +131,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <nav className="fixed inset-x-3 bottom-3 z-50 rounded-lg border border-border bg-card/95 p-2 shadow-panel backdrop-blur lg:hidden">
-        <div className="grid grid-cols-4 gap-1">
-          {navItems.map((item) => {
+        <div
+          className="grid gap-1"
+          style={{
+            gridTemplateColumns: `repeat(${visibleNavItems.length}, minmax(0, 1fr))`,
+          }}>
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const active = isNavItemActive(pathname, item.href);
 

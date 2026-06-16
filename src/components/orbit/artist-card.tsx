@@ -9,7 +9,13 @@ interface ArtistCardProps {
 }
 
 export function ArtistCard({ artist }: ArtistCardProps) {
-  const fullName = `${artist.name} ${artist.lastName}`;
+  const displayName = artist.stageName || artist.fullName;
+  const initials = artist.fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.slice(0, 1))
+    .join("");
 
   return (
     <Card className="orbit-shell overflow-hidden">
@@ -17,15 +23,14 @@ export function ArtistCard({ artist }: ArtistCardProps) {
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-4">
             <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-primary text-xl font-black text-primary-foreground shadow-glow">
-              {artist.name.slice(0, 1)}
-              {artist.lastName.slice(0, 1)}
+              {initials}
             </div>
             <div className="min-w-0 space-y-2">
               <h2 className="truncate text-xl font-semibold tracking-normal">
-                {fullName}
+                {displayName}
               </h2>
               <Badge variant="silver" className="w-fit">
-                {artist.role}
+                {artist.stageName ? artist.fullName : "ARTIST"}
               </Badge>
             </div>
           </div>
@@ -42,7 +47,7 @@ export function ArtistCard({ artist }: ArtistCardProps) {
           </div>
           <div className="flex items-center gap-2">
             <Phone className="size-4 text-primary" />
-            <span>{artist.phone || "Telefone nao informado"}</span>
+            {artist.phone ? <span>{artist.phone}</span> : null}
           </div>
         </div>
       </CardContent>

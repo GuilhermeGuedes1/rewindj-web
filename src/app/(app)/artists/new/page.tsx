@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { PageHeader } from "@/components/orbit/page-header";
@@ -19,12 +19,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useCreateArtist } from "@/hooks/use-artists";
+import { useAuth } from "@/hooks/useAuth";
 import { artistSchema, type ArtistFormValues } from "@/schemas/artist.schema";
+import { createArtistService } from "@/services/artists.service";
 
 export default function NewArtistPage() {
   const router = useRouter();
-  const createArtist = useCreateArtist();
+  const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<ArtistFormValues>({
     resolver: zodResolver(artistSchema),
@@ -37,11 +38,17 @@ export default function NewArtistPage() {
     },
   });
 
+  useEffect(() => {
+    if (user?.role === "ARTIST") {
+      router.replace("/dashboard");
+    }
+  }, [router, user?.role]);
+
   async function onSubmit(values: ArtistFormValues) {
     setError(null);
 
     try {
-      await createArtist.mutateAsync(values);
+      await createArtistService(values);
       router.push("/artists");
     } catch {
       setError("Nao foi possivel criar o artista agora.");

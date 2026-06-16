@@ -5,13 +5,21 @@ export type LoginData = {
   password: string;
 };
 
+export type RegisterData = {
+  name: string;
+  lastName: string;
+  email: string;
+  password: string;
+};
+
 export type AuthUser = {
-  sub: string;
+  sub?: string;
+  id?: string;
   email: string;
   name: string;
   lastName?: string | null;
   role: "CEO" | "ADMIN" | "PRODUCER" | "ARTIST";
-  organizationId: string;
+  organizationId: string | null;
 };
 
 export type LoginResponse = {
@@ -20,6 +28,11 @@ export type LoginResponse = {
 
 export async function loginService(data: LoginData) {
   const response = await api.post<LoginResponse>("/auth/login", data);
+  return response.data;
+}
+
+export async function registerService(data: RegisterData) {
+  const response = await api.post("/auth/register", data);
   return response.data;
 }
 
