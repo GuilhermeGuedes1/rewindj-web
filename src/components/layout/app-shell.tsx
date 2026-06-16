@@ -7,6 +7,7 @@ import {
   Mic2,
   Plus,
   Sparkles,
+  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/events", label: "Eventos", icon: CalendarDays },
   { href: "/artists", label: "Artistas", icon: Mic2 },
+  { href: "/clients", label: "Clientes", icon: UsersRound },
   { href: "/events/create", label: "Novo", icon: Plus },
 ];
 
@@ -29,7 +31,7 @@ const artistNavItems = [
 ];
 
 function isNavItemActive(pathname: string, href: string) {
-  if (href === "/artists") {
+  if (href === "/artists" || href === "/clients") {
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
