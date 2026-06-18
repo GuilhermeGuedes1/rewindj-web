@@ -1,5 +1,5 @@
 import { api } from "@/libs/axios";
-import type { Event, CreateEventPayload } from "@/types/event";
+import type { CreateEventPayload, Event, EventDetails } from "@/types/event";
 
 export async function createEventService(data: CreateEventPayload) {
   const response = await api.post<Event>("/events/create", data);
@@ -8,6 +8,10 @@ export async function createEventService(data: CreateEventPayload) {
 
 export async function listEventsService() {
   const response = await api.get<Event[]>("/events");
-  console.log(response.data);
+  return response.data;
+}
+
+export async function getEventByIdService(id: string) {
+  const response = await api.get<EventDetails>(`/events/${id}`);
   return response.data;
 }

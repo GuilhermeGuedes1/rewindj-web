@@ -1,4 +1,5 @@
 import { CalendarDays, Clock, MapPin, Music } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,59 +30,64 @@ export function EventCard({ event, featured = false }: EventCardProps) {
       : (event.artist?.fullName ?? "Artista não definido");
 
   return (
-    <Card className="orbit-shell overflow-hidden">
-      <CardContent className={featured ? "p-5 sm:p-6" : "p-5"}>
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div className="flex gap-4">
-            <div className="flex size-14 shrink-0 flex-col items-center justify-center rounded-md bg-primary text-primary-foreground shadow-glow">
-              <span className="text-lg font-black leading-none">
-                {formatEventDate(event.eventDate).split(" ")[0]}
-              </span>
+    <Link
+      href={`/events/${event.id}`}
+      aria-label={`Ver detalhes de ${event.title}`}
+      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Card className="orbit-shell overflow-hidden transition-colors hover:border-primary/40">
+        <CardContent className={featured ? "p-5 sm:p-6" : "p-5"}>
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div className="flex gap-4">
+              <div className="flex size-14 shrink-0 flex-col items-center justify-center rounded-md bg-primary text-primary-foreground shadow-glow">
+                <span className="text-lg font-black leading-none">
+                  {formatEventDate(event.eventDate).split(" ")[0]}
+                </span>
 
-              <span className="text-[10px] font-bold uppercase">
-                {formatEventDate(event.eventDate).split(" ")[2] ??
-                  formatEventDate(event.eventDate).split(" ")[1]}
-              </span>
+                <span className="text-[10px] font-bold uppercase">
+                  {formatEventDate(event.eventDate).split(" ")[2] ??
+                    formatEventDate(event.eventDate).split(" ")[1]}
+                </span>
+              </div>
+
+              <div className="min-w-0 space-y-2">
+                <h2 className="line-clamp-2 text-xl font-semibold tracking-normal">
+                  {event.title}
+                </h2>
+
+                <Badge variant="silver" className="w-fit">
+                  {event.venueName}
+                </Badge>
+              </div>
             </div>
 
-            <div className="min-w-0 space-y-2">
-              <h2 className="line-clamp-2 text-xl font-semibold tracking-normal">
-                {event.title}
-              </h2>
+            {featured ? <Badge>Ao vivo</Badge> : null}
+          </div>
 
-              <Badge variant="silver" className="w-fit">
-                {event.venueName}
-              </Badge>
+          <div className="grid gap-3 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Clock className="size-4 text-primary" />
+              {event.startTime} - {event.endTime}
             </div>
-          </div>
 
-          {featured ? <Badge>Ao vivo</Badge> : null}
-        </div>
-
-        <div className="grid gap-3 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4 text-primary" />
-            {event.startTime} - {event.endTime}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Music className="size-4 text-primary" />
-            {artistName}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <MapPin className="size-4 text-primary" />
-            {event.city}, {event.state}
-          </div>
-
-          {event.notes ? (
-            <div className="flex items-start gap-2">
-              <CalendarDays className="mt-0.5 size-4 text-primary" />
-              <p className="line-clamp-2 leading-6">{event.notes}</p>
+            <div className="flex items-center gap-2">
+              <Music className="size-4 text-primary" />
+              {artistName}
             </div>
-          ) : null}
-        </div>
-      </CardContent>
-    </Card>
+
+            <div className="flex items-center gap-2">
+              <MapPin className="size-4 text-primary" />
+              {event.city}, {event.state}
+            </div>
+
+            {event.notes ? (
+              <div className="flex items-start gap-2">
+                <CalendarDays className="mt-0.5 size-4 text-primary" />
+                <p className="line-clamp-2 leading-6">{event.notes}</p>
+              </div>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

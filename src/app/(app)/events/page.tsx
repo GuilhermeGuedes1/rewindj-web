@@ -50,10 +50,10 @@ export default function EventsPage() {
         event.venueName,
         event.city,
         event.state,
-        event.client.name,
-        event.client.companyName ?? "",
-        event.artist.fullName,
-        event.artist.stageName ?? "",
+        event.client?.name ?? "",
+        event.client?.companyName ?? "",
+        event.artist?.fullName ?? "",
+        event.artist?.stageName ?? "",
       ]
         .join(" ")
         .toLowerCase()

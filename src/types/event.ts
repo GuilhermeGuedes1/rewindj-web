@@ -1,4 +1,20 @@
-export interface Event {
+export interface EventArtist {
+  id: string;
+  fullName: string;
+  stageName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+
+export interface EventClient {
+  id: string;
+  name: string;
+  companyName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}
+
+export interface EventDetails {
   id: string;
   title: string;
   eventDate: string;
@@ -13,26 +29,14 @@ export interface Event {
   paymentMethod?: string | null;
   hasContract?: boolean | null;
   notes?: string | null;
-
-  artist: {
-    id: string;
-    fullName: string;
-    stageName?: string | null;
-    email: string;
-    phone?: string | null;
-  };
-
-  client: {
-    id: string;
-    name: string;
-    companyName?: string | null;
-    phone?: string | null;
-    email?: string | null;
-  };
-
-  createdAt: string;
-  updatedAt: string;
+  artist?: EventArtist | null;
+  client?: EventClient | null;
+  createdAt?: string;
+  updatedAt?: string;
+  
 }
+
+export type Event = EventDetails;
 
 export interface CreateEventPayload {
   title: string;

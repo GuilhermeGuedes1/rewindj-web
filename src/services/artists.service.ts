@@ -12,7 +12,6 @@ export type CreateArtistPayload = {
 
 export async function listArtistsService() {
   const response = await api.get<Artist[]>("/artists");
-  console.log(response.data);
   return response.data;
 }
 
