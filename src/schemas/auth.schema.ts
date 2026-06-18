@@ -10,6 +10,7 @@ export const registerSchema = z.object({
   lastName: z.string().min(2, "Informe seu sobrenome."),
   email: z.string().email("Informe um email válido."),
   password: z.string().min(6, "Use ao menos 6 caracteres."),
+  confirmPassword: z.string().min(6, "Use ao menos 6 caracteres."),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;

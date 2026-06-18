@@ -33,14 +33,21 @@ export default function RegisterPage() {
       lastName: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
   async function onSubmit(values: RegisterFormValues) {
     setError(null);
 
+    if (values.password !== values.confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+
     try {
-      await registerUser(values);
+      const { confirmPassword, ...payload } = values;
+      await registerUser(payload);
     } catch {
       setError("Nao foi possivel criar sua conta agora.");
     }
@@ -109,6 +116,22 @@ export default function RegisterPage() {
             {errors.password ? (
               <p className="text-sm text-destructive">
                 {errors.password.message}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirmar senha</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="Repita sua senha"
+              {...register("confirmPassword")}
+            />
+            {errors.confirmPassword ? (
+              <p className="text-sm text-destructive">
+                {errors.confirmPassword.message}
               </p>
             ) : null}
           </div>
