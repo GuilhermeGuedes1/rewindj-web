@@ -31,6 +31,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   async function onSubmit(values: LoginFormValues) {
@@ -46,11 +50,11 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="orbit-shell mx-auto w-full max-w-md">
+    <Card className=" mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle>Entrar no Orbit</CardTitle>
+        <CardTitle>Entrar </CardTitle>
         <CardDescription>
-          Acesse sua agenda, convites e operacao de eventos.
+          Acesse sua agenda, clientes, e operação de eventos.
         </CardDescription>
       </CardHeader>
       <CardContent>
