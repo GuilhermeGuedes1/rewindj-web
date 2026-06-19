@@ -21,7 +21,7 @@ export interface AcceptInviteResponse {
 }
 
 export interface AcceptInvitePayload {
-  fullName: string;
+  name: string;
   stageName?: string;
   birthDate?: string;
   phone: string;

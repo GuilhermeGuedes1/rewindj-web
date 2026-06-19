@@ -27,7 +27,7 @@ export function EventCard({ event, featured = false }: EventCardProps) {
   const artistName =
     event.artist?.stageName && event.artist.stageName !== "string"
       ? event.artist.stageName
-      : (event.artist?.fullName ?? "Artista não definido");
+      : (event.artist?.name ?? "Artista não definido");
 
   return (
     <Link

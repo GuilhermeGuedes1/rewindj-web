@@ -7,7 +7,6 @@ export type LoginData = {
 
 export type RegisterData = {
   name: string;
-  lastName: string;
   email: string;
   password: string;
 };
@@ -17,7 +16,6 @@ export type AuthUser = {
   id?: string;
   email: string;
   name: string;
-  lastName?: string | null;
   role: "CEO" | "ADMIN" | "PRODUCER" | "ARTIST";
   organizationId: string | null;
 };

@@ -1,6 +1,6 @@
 export interface Artist {
   id: string;
-  fullName: string;
+  name: string;
   stageName?: string | null;
   birthDate?: string | null;
   phone?: string | null;

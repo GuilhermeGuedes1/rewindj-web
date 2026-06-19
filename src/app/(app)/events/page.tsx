@@ -52,7 +52,7 @@ export default function EventsPage() {
         event.state,
         event.client?.name ?? "",
         event.client?.companyName ?? "",
-        event.artist?.fullName ?? "",
+        event.artist?.name ?? "",
         event.artist?.stageName ?? "",
       ]
         .join(" ")

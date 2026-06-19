@@ -4,7 +4,6 @@ import type { Event } from "@/types/event";
 
 export type CreateArtistPayload = {
   name: string;
-  lastName: string;
   email: string;
   phone?: string;
   temporaryPassword?: string;

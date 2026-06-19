@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const artistSchema = z.object({
   name: z.string().min(2, "Informe o nome do artista."),
-  lastName: z.string().min(2, "Informe o sobrenome."),
   email: z.string().email("Informe um email valido."),
   phone: z.string().optional(),
   temporaryPassword: z

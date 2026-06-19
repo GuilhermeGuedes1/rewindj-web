@@ -1,6 +1,6 @@
 export interface EventArtist {
   id: string;
-  fullName: string;
+  name: string;
   stageName?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -33,7 +33,6 @@ export interface EventDetails {
   client?: EventClient | null;
   createdAt?: string;
   updatedAt?: string;
-  
 }
 
 export type Event = EventDetails;

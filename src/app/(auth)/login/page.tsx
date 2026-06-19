@@ -5,7 +5,7 @@ import { Loader2, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -42,10 +42,13 @@ export default function LoginPage() {
 
     try {
       await login(values);
-    } catch {
-      setError(
-        "Nao foi possivel entrar. Confira seus dados e tente novamente.",
-      );
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError("Email ou senha inválidos.");
+        return;
+      }
+
+      setError("Não foi possível realizar o login. Tente novamente.");
     }
   }
 

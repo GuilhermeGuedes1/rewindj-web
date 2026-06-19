@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Clock3, Music2, Sparkles } from "lucide-react";
+import { CalendarCheck, Clock3, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Event } from "@/types/event";
@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
   const isArtist = user?.role === "ARTIST";
 
   useEffect(() => {
@@ -87,11 +88,15 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Orbit command"
-        title={`Boa noite${user ? `, ${user.name}` : ""}.`}
+        eyebrow={user?.organizationName ?? "RewindJ"}
+        title={
+          isArtist
+            ? `Olá, ${artistProfile?.stageName || artistProfile?.name || user?.name}`
+            : `Olá, ${user?.name}`
+        }
         description={
           isArtist
-            ? "Seu perfil artístico, próximos eventos e histórico dentro da organização."
+            ? "Seus próximos shows, histórico e dados artísticos dentro da organização."
             : "Uma visão rápida da sua operação: agenda, artistas, convites e eventos criados com IA."
         }
         action={
@@ -103,40 +108,13 @@ export default function DashboardPage() {
         }
       />
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          icon={CalendarCheck}
-          label={isArtist ? "Próximos eventos" : "Eventos ativos"}
-          value={isLoading ? "--" : String(upcomingEvents.length)}
-          detail={
-            nextEvent
-              ? `${nextEvent.city}, ${nextEvent.state}`
-              : "Nenhum evento futuro"
-          }
-        />
-
-        <StatCard
-          icon={Music2}
-          label={isArtist ? "Perfil" : "Artistas"}
-          value={
-            isArtist
-              ? artistProfile?.stageName || artistProfile?.fullName
-                ? "1"
-                : "--"
-              : String(artists.length)
-          }
-          detail={
-            isArtist
-              ? artistProfile?.stageName ||
-                artistProfile?.fullName ||
-                "Carregando perfil"
-              : "Na organização"
-          }
-        />
-
+      <section
+        className={`mb-6 grid gap-3 ${
+          isArtist ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4"
+        }`}>
         <StatCard
           icon={Clock3}
-          label="Próximo evento"
+          label={isArtist ? "Próximo show" : "Próximo evento"}
           value={
             nextEvent
               ? new Intl.DateTimeFormat("pt-BR", {
@@ -149,18 +127,32 @@ export default function DashboardPage() {
         />
 
         <StatCard
-          icon={Sparkles}
-          label={isArtist ? "Histórico" : "Eventos via IA"}
-          value={isArtist ? String(pastEvents.length) : String(events.length)}
-          detail={isArtist ? "Eventos realizados" : "Eventos cadastrados"}
+          icon={CalendarCheck}
+          label={isArtist ? "Eventos futuros" : "Eventos ativos"}
+          value={isLoading ? "--" : String(upcomingEvents.length)}
+          detail={
+            nextEvent
+              ? `${nextEvent.city}, ${nextEvent.state}`
+              : "Nenhum evento futuro"
+          }
         />
+
+        {!isArtist && (
+          <StatCard
+            icon={Sparkles}
+            label="Artistas"
+            value={String(artists.length)}
+            detail="Na organização"
+          />
+        )}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+      <section
+        className={`grid gap-4 ${isArtist ? "xl:grid-cols-[1.2fr_0.8fr]" : ""}`}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold tracking-normal">
-              Próximo evento
+              {isArtist ? "Próximo show" : "Próximo evento"}
             </h2>
 
             <Button variant="ghost" asChild>
@@ -177,46 +169,58 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <Card className="orbit-shell overflow-hidden">
-          <CardContent className="p-6">
-            <div className="mb-6 flex items-center justify-between gap-4">
-              <div>
+        {isArtist && (
+          <Card className="orbit-shell overflow-hidden">
+            <CardContent className="p-6">
+              <div className="mb-6">
                 <Badge variant="silver" className="mb-3">
-                  {isArtist ? "Perfil artístico" : "AI stage"}
+                  Perfil artístico
                 </Badge>
 
                 <h2 className="text-xl font-semibold tracking-normal">
-                  {isArtist ? "Meus dados" : "Brief inteligente"}
+                  Meus dados
                 </h2>
               </div>
 
-              <Sparkles className="size-5 text-primary" />
-            </div>
-
-            <div className="space-y-4">
-              {(isArtist
-                ? [
-                    artistProfile?.fullName ?? "Nome não informado",
-                    artistProfile?.email ?? "Email não informado",
-                    artistProfile?.phone ?? "Telefone não informado",
-                    artistProfile?.pixKey ?? "Pix não informado",
-                  ]
-                : [
-                    "WhatsApp -> Evento preenchido automaticamente.",
-                    "Identificação automática de cliente, artista e local.",
-                    "Detecção de informações ausentes antes da confirmação.",
-                    "Sugestão de horários, observações e briefing operacional.",
-                  ]
-              ).map((item) => (
-                <div
-                  key={item}
-                  className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
-                  {item}
+              <div className="space-y-3">
+                <div className="rounded-md border border-border bg-muted/40 p-4">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    Nome
+                  </p>
+                  <p>{artistProfile?.name ?? "Não informado"}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
+                <div className="rounded-md border border-border bg-muted/40 p-4">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    Nome artístico
+                  </p>
+                  <p>{artistProfile?.stageName ?? "Não informado"}</p>
+                </div>
+
+                <div className="rounded-md border border-border bg-muted/40 p-4">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    Email
+                  </p>
+                  <p>{artistProfile?.email ?? "Não informado"}</p>
+                </div>
+
+                <div className="rounded-md border border-border bg-muted/40 p-4">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    Telefone
+                  </p>
+                  <p>{artistProfile?.phone ?? "Não informado"}</p>
+                </div>
+
+                <div className="rounded-md border border-border bg-muted/40 p-4">
+                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    Chave Pix
+                  </p>
+                  <p>{artistProfile?.pixKey ?? "Não informado"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </section>
     </div>
   );

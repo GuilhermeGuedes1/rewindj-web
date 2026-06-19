@@ -186,7 +186,7 @@ export default function NewEventPage() {
 
       const matchedArtist = artists.find((artist) => {
         const normalizedArtist = normalizeName(
-          `${artist.fullName} ${artist.stageName ?? ""}`,
+          `${artist.name} ${artist.stageName ?? ""}`,
         );
 
         return (
@@ -485,7 +485,7 @@ export default function NewEventPage() {
 
                   {artists.map((artist) => (
                     <option key={artist.id} value={artist.id}>
-                      {artist.stageName || artist.fullName}
+                      {artist.stageName || artist.name}
                     </option>
                   ))}
                 </select>

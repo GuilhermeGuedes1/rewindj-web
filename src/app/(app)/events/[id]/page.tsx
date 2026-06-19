@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, Clock, FileText, MapPin, Music, User } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  FileText,
+  MapPin,
+  Music,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,7 +47,7 @@ function getArtistName(event: EventDetails) {
     return stageName;
   }
 
-  return fallback(event.artist?.fullName);
+  return fallback(event.artist?.name);
 }
 
 function contractStatus(value?: boolean | null) {
@@ -150,7 +158,9 @@ export default function EventDetailsPage() {
               <CardContent className="p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <MapPin className="size-4 text-primary" />
-                  <h2 className="text-xl font-semibold tracking-normal">Local</h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Local
+                  </h2>
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground">
@@ -167,7 +177,9 @@ export default function EventDetailsPage() {
               <CardContent className="p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <Music className="size-4 text-primary" />
-                  <h2 className="text-xl font-semibold tracking-normal">Artista</h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Artista
+                  </h2>
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground">
@@ -181,7 +193,9 @@ export default function EventDetailsPage() {
               <CardContent className="p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <User className="size-4 text-primary" />
-                  <h2 className="text-xl font-semibold tracking-normal">Cliente</h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Cliente
+                  </h2>
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground">

@@ -9,8 +9,8 @@ interface ArtistCardProps {
 }
 
 export function ArtistCard({ artist }: ArtistCardProps) {
-  const displayName = artist.stageName || artist.fullName;
-  const initials = artist.fullName
+  const displayName = artist.stageName;
+  const initials = artist.name
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -30,7 +30,7 @@ export function ArtistCard({ artist }: ArtistCardProps) {
                 {displayName}
               </h2>
               <Badge variant="silver" className="w-fit">
-                {artist.stageName ? artist.fullName : "ARTIST"}
+                {artist.stageName}
               </Badge>
             </div>
           </div>

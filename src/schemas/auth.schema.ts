@@ -8,9 +8,14 @@ export const loginSchema = z.object({
 export const registerSchema = z
   .object({
     name: z.string().min(2, "Informe seu nome."),
-    lastName: z.string().min(2, "Informe seu sobrenome."),
+
     email: z.string().email("Informe um email válido."),
-    phone: z.string().min(10, "Informe um telefone válido."),
+    phone: z
+      .string()
+      .refine(
+        (value) => value.replace(/\D/g, "").length === 11,
+        "Informe um telefone válido.",
+      ),
 
     organizationName: z.string().min(2, "Informe o nome da organização."),
 
