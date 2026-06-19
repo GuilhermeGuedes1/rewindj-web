@@ -18,6 +18,7 @@ export type AuthUser = {
   name: string;
   role: "CEO" | "ADMIN" | "PRODUCER" | "ARTIST";
   organizationId: string | null;
+  organizationName: string | null;
 };
 
 export type LoginResponse = {

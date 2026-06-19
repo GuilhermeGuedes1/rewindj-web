@@ -100,6 +100,7 @@ export default function NewEventPage() {
       state: "",
       paymentDate: "",
       paymentMethod: "",
+      status: "NEGOTIATING",
       hasContract: false,
       artistId: "",
       clientName: "",
@@ -167,6 +168,11 @@ export default function NewEventPage() {
       setValue("paymentMethod", draft.paymentMethod ?? "", {
         shouldValidate: true,
       });
+
+      setValue("status", draft.status ?? "NEGOTIATING", {
+        shouldValidate: true,
+      });
+
       setValue("hasContract", draft.hasContract ?? false, {
         shouldValidate: true,
       });
@@ -222,6 +228,7 @@ export default function NewEventPage() {
         address: values.address,
         city: values.city,
         state: values.state,
+        status: values.status,
         paymentDate: values.paymentDate,
         paymentMethod: values.paymentMethod || null,
         hasContract: values.hasContract,
@@ -375,14 +382,27 @@ export default function NewEventPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Forma de pagamento</Label>
                 <Input
                   id="paymentMethod"
-                  placeholder="Pix, boleto, transferencia..."
+                  placeholder="Pix, boleto, transferência..."
                   {...register("paymentMethod")}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+
+                <select
+                  id="status"
+                  className="flex h-12 w-full rounded-md border border-input bg-muted/55 px-4 py-2 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+                  {...register("status")}>
+                  <option value="NEGOTIATING">Em negociação</option>
+                  <option value="CONFIRMED">Fechado</option>
+                  <option value="LOST">Perdido</option>
+                </select>
               </div>
 
               <label

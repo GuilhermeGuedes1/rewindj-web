@@ -25,6 +25,7 @@ export interface EventDetails {
   address: string;
   city: string;
   state: string;
+  status?: string | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
   hasContract?: boolean | null;
@@ -47,6 +48,7 @@ export interface CreateEventPayload {
   address: string;
   city: string;
   state: string;
+  status: "NEGOTIATING" | "CONFIRMED" | "LOST" | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
   hasContract?: boolean;

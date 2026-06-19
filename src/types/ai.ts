@@ -12,6 +12,7 @@ export interface EventDraft {
   address: string | null;
   city: string | null;
   state: string | null;
+  status: "NEGOTIATING" | "CONFIRMED" | "LOST" | null;
   paymentDate: string | null;
   paymentMethod: string | null;
   hasContract: boolean | null;

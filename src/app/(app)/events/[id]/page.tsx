@@ -56,6 +56,22 @@ function contractStatus(value?: boolean | null) {
   return "Não informado";
 }
 
+function eventStatusLabel(status?: string | null) {
+  switch (status) {
+    case "NEGOTIATING":
+      return "Em negociação";
+
+    case "CONFIRMED":
+      return "Fechado";
+
+    case "LOST":
+      return "Perdido";
+
+    default:
+      return "Não informado";
+  }
+}
+
 export default function EventDetailsPage() {
   const params = useParams<{ id: string }>();
   const [event, setEvent] = useState<EventDetails | null>(null);
@@ -122,7 +138,7 @@ export default function EventDetailsPage() {
                   </Badge>
                 </div>
 
-                <Badge>{contractStatus(event.hasContract)}</Badge>
+                <Badge>{eventStatusLabel(event.status)}</Badge>
               </div>
 
               <div className="grid gap-4 text-sm text-muted-foreground sm:grid-cols-2">

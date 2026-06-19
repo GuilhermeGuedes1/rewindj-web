@@ -23,11 +23,28 @@ function formatEventDate(value: string) {
   }).format(date);
 }
 
+function getStatusLabel(status?: string | null) {
+  switch (status) {
+    case "NEGOTIATING":
+      return "Em negociação";
+    case "CONFIRMED":
+      return "Fechado";
+    case "LOST":
+      return "Perdido";
+    default:
+      return "Não informado";
+  }
+}
+
 export function EventCard({ event, featured = false }: EventCardProps) {
+  console.log(event);
   const artistName =
     event.artist?.stageName && event.artist.stageName !== "string"
       ? event.artist.stageName
       : (event.artist?.name ?? "Artista não definido");
+
+  const formattedDate = formatEventDate(event.eventDate);
+  const dateParts = formattedDate.split(" ");
 
   return (
     <Link
@@ -40,12 +57,11 @@ export function EventCard({ event, featured = false }: EventCardProps) {
             <div className="flex gap-4">
               <div className="flex size-14 shrink-0 flex-col items-center justify-center rounded-md bg-primary text-primary-foreground shadow-glow">
                 <span className="text-lg font-black leading-none">
-                  {formatEventDate(event.eventDate).split(" ")[0]}
+                  {dateParts[0]}
                 </span>
 
                 <span className="text-[10px] font-bold uppercase">
-                  {formatEventDate(event.eventDate).split(" ")[2] ??
-                    formatEventDate(event.eventDate).split(" ")[1]}
+                  {dateParts[2] ?? dateParts[1]}
                 </span>
               </div>
 
@@ -54,13 +70,11 @@ export function EventCard({ event, featured = false }: EventCardProps) {
                   {event.title}
                 </h2>
 
-                <Badge variant="silver" className="w-fit">
-                  {event.venueName}
-                </Badge>
+                <Badge className="w-fit">{getStatusLabel(event.status)}</Badge>
               </div>
             </div>
 
-            {featured ? <Badge>Ao vivo</Badge> : null}
+            {featured ? <Badge variant="silver">Destaque</Badge> : null}
           </div>
 
           <div className="grid gap-3 text-sm text-muted-foreground">
@@ -72,6 +86,11 @@ export function EventCard({ event, featured = false }: EventCardProps) {
             <div className="flex items-center gap-2">
               <Music className="size-4 text-primary" />
               {artistName}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <MapPin className="size-4 text-primary" />
+              {event.venueName}
             </div>
 
             <div className="flex items-center gap-2">
