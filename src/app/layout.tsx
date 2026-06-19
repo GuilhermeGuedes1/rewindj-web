@@ -3,7 +3,7 @@ import { Providers } from "@/app/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Orbit",
+  title: "rewindj",
   description: "Operations layer for DJs, agencies and premium events.",
 };
 

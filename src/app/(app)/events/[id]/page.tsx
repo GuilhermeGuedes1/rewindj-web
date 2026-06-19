@@ -1,6 +1,14 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, Clock, FileText, MapPin, Music, User } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  FileText,
+  MapPin,
+  Music,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,13 +47,29 @@ function getArtistName(event: EventDetails) {
     return stageName;
   }
 
-  return fallback(event.artist?.fullName);
+  return fallback(event.artist?.name);
 }
 
 function contractStatus(value?: boolean | null) {
   if (value === true) return "Contrato confirmado";
   if (value === false) return "Sem contrato confirmado";
   return "Não informado";
+}
+
+function eventStatusLabel(status?: string | null) {
+  switch (status) {
+    case "NEGOTIATING":
+      return "Em negociação";
+
+    case "CONFIRMED":
+      return "Fechado";
+
+    case "LOST":
+      return "Perdido";
+
+    default:
+      return "Não informado";
+  }
 }
 
 export default function EventDetailsPage() {
@@ -114,7 +138,7 @@ export default function EventDetailsPage() {
                   </Badge>
                 </div>
 
-                <Badge>{contractStatus(event.hasContract)}</Badge>
+                <Badge>{eventStatusLabel(event.status)}</Badge>
               </div>
 
               <div className="grid gap-4 text-sm text-muted-foreground sm:grid-cols-2">
@@ -150,7 +174,9 @@ export default function EventDetailsPage() {
               <CardContent className="p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <MapPin className="size-4 text-primary" />
-                  <h2 className="text-xl font-semibold tracking-normal">Local</h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Local
+                  </h2>
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground">
@@ -167,7 +193,9 @@ export default function EventDetailsPage() {
               <CardContent className="p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <Music className="size-4 text-primary" />
-                  <h2 className="text-xl font-semibold tracking-normal">Artista</h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Artista
+                  </h2>
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground">
@@ -181,7 +209,9 @@ export default function EventDetailsPage() {
               <CardContent className="p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <User className="size-4 text-primary" />
-                  <h2 className="text-xl font-semibold tracking-normal">Cliente</h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Cliente
+                  </h2>
                 </div>
 
                 <div className="grid gap-3 text-sm text-muted-foreground">

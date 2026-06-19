@@ -95,21 +95,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="space-y-4">
-              <div className="orbit-shell rounded-lg p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                  <Sparkles className="size-4 text-primary" />
-                  Gemini layer
-                </div>
-                <p className="text-xs leading-5 text-muted-foreground">
-                  Slots reservados para briefs, sugestoes de line-up e resumo de
-                  eventos.
-                </p>
-              </div>
-
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">
-                    {user ? `${user.name} ${user.lastName}` : "Orbit user"}
+                    {user ? `${user.name} ` : "rewindj user"}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {user?.email ?? "demo@orbit.local"}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Loader2, MailPlus, Plus, Search } from "lucide-react";
+import { Copy, Loader2, MailPlus, Search, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -59,12 +59,7 @@ export default function ArtistsPage() {
     }
 
     return artists.filter((artist) =>
-      [
-        artist.fullName,
-        artist.stageName ?? "",
-        artist.email,
-        artist.phone ?? "",
-      ]
+      [artist.name, artist.stageName ?? "", artist.email, artist.phone ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
@@ -133,20 +128,36 @@ export default function ArtistsPage() {
     }
   }
 
+  async function handleShareInviteLink() {
+    if (!inviteLink) return;
+
+    const text = `Você recebeu um convite para entrar no RewindJ: ${inviteLink}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Convite RewindJ",
+          text,
+          url: inviteLink,
+        });
+
+        return;
+      }
+
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(whatsappUrl, "_blank");
+    } catch (error) {
+      console.error("Erro ao compartilhar convite:", error);
+      setInviteError("Não foi possível compartilhar o link.");
+    }
+  }
+
   return (
     <div>
       <PageHeader
         eyebrow="Roster"
         title="Artistas"
         description="Acompanhe o elenco da agência com contatos, status e identidade visual de app musical."
-        action={
-          <Button asChild>
-            <Link href="/artists/new">
-              <Plus className="size-4" />
-              Novo artista
-            </Link>
-          </Button>
-        }
       />
 
       {canInviteArtist ? (
@@ -154,9 +165,6 @@ export default function ArtistsPage() {
           <CardContent className="p-5 sm:p-6">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div className="space-y-2">
-                <Badge variant="silver" className="w-fit">
-                  Convite
-                </Badge>
                 <h2 className="text-xl font-semibold tracking-normal">
                   Convidar artista
                 </h2>
@@ -210,16 +218,31 @@ export default function ArtistsPage() {
                   <div className="mb-3 text-sm font-medium">
                     Link do convite
                   </div>
-                  <div className="mb-4 break-all text-sm text-muted-foreground">
+                  <Link
+                    href={inviteLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mb-4 block break-all text-sm font-medium text-primary hover:underline">
                     {inviteLink}
+                  </Link>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCopyInviteLink}>
+                      <Copy />
+                      {copiedInviteLink ? "Link copiado" : "Copiar link"}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleShareInviteLink}>
+                      <Share2 />
+                      Compartilhar
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCopyInviteLink}>
-                    <Copy />
-                    {copiedInviteLink ? "Link copiado" : "Copiar link"}
-                  </Button>
                 </div>
               ) : null}
             </form>

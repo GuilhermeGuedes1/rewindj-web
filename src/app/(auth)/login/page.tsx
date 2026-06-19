@@ -5,7 +5,7 @@ import { Loader2, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,6 +31,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   async function onSubmit(values: LoginFormValues) {
@@ -38,19 +42,22 @@ export default function LoginPage() {
 
     try {
       await login(values);
-    } catch {
-      setError(
-        "Nao foi possivel entrar. Confira seus dados e tente novamente.",
-      );
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setError("Email ou senha inválidos.");
+        return;
+      }
+
+      setError("Não foi possível realizar o login. Tente novamente.");
     }
   }
 
   return (
-    <Card className="orbit-shell mx-auto w-full max-w-md">
+    <Card className=" mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle>Entrar no Orbit</CardTitle>
+        <CardTitle>Entrar </CardTitle>
         <CardDescription>
-          Acesse sua agenda, convites e operacao de eventos.
+          Acesse sua agenda, clientes, e operação de eventos.
         </CardDescription>
       </CardHeader>
       <CardContent>

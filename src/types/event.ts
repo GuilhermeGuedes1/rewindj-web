@@ -1,6 +1,6 @@
 export interface EventArtist {
   id: string;
-  fullName: string;
+  name: string;
   stageName?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -25,6 +25,7 @@ export interface EventDetails {
   address: string;
   city: string;
   state: string;
+  status?: string | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
   hasContract?: boolean | null;
@@ -33,7 +34,6 @@ export interface EventDetails {
   client?: EventClient | null;
   createdAt?: string;
   updatedAt?: string;
-  
 }
 
 export type Event = EventDetails;
@@ -48,6 +48,7 @@ export interface CreateEventPayload {
   address: string;
   city: string;
   state: string;
+  status: "NEGOTIATING" | "CONFIRMED" | "LOST" | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
   hasContract?: boolean;
