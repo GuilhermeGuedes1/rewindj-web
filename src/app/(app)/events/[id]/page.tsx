@@ -51,8 +51,8 @@ function getArtistName(event: EventDetails) {
 }
 
 function contractStatus(value?: boolean | null) {
-  if (value === true) return "Contrato confirmado";
-  if (value === false) return "Sem contrato confirmado";
+  if (value === true) return "Com contrato";
+  if (value === false) return "Sem contrato";
   return "Não informado";
 }
 

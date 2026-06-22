@@ -67,6 +67,17 @@ function normalizeName(value?: string | null) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function formatCurrencyInput(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") return "";
+
+  const numberValue =
+    typeof value === "number" ? value : Number(String(value).replace(",", "."));
+
+  if (Number.isNaN(numberValue)) return "";
+
+  return String(numberValue);
+}
+
 export default function NewEventPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -98,6 +109,7 @@ export default function NewEventPage() {
       address: "",
       city: "",
       state: "",
+      fee: "",
       paymentDate: "",
       paymentMethod: "",
       status: "NEGOTIATING",
@@ -165,6 +177,11 @@ export default function NewEventPage() {
       setValue("paymentDate", normalizeDate(draft.paymentDate), {
         shouldValidate: true,
       });
+
+      setValue("fee", formatCurrencyInput(draft.fee), {
+        shouldValidate: true,
+      });
+
       setValue("paymentMethod", draft.paymentMethod ?? "", {
         shouldValidate: true,
       });
@@ -221,14 +238,15 @@ export default function NewEventPage() {
       await createEventService({
         title: values.title,
         eventDate: values.eventDate,
-        startTime: values.startTime,
-        endTime: values.endTime,
+        startTime: values.startTime || null,
+        endTime: values.endTime || null,
         setDuration: values.setDuration || null,
         venueName: values.venueName,
         address: values.address,
         city: values.city,
         state: values.state,
         status: values.status,
+        fee: values.fee ? Number(String(values.fee).replace(",", ".")) : null,
         paymentDate: values.paymentDate,
         paymentMethod: values.paymentMethod || null,
         hasContract: values.hasContract,
@@ -342,7 +360,7 @@ export default function NewEventPage() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="startTime">Início</Label>
+                <Label htmlFor="startTime">Início do set</Label>
                 <Input id="startTime" type="time" {...register("startTime")} />
                 {errors.startTime ? (
                   <p className="text-sm text-destructive">
@@ -352,7 +370,7 @@ export default function NewEventPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="endTime">Término</Label>
+                <Label htmlFor="endTime">Fim do set</Label>
                 <Input id="endTime" type="time" {...register("endTime")} />
                 {errors.endTime ? (
                   <p className="text-sm text-destructive">
@@ -382,7 +400,7 @@ export default function NewEventPage() {
               </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Forma de pagamento</Label>
                 <Input
@@ -390,6 +408,22 @@ export default function NewEventPage() {
                   placeholder="Pix, boleto, transferência..."
                   {...register("paymentMethod")}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="fee">Valor do cachê</Label>
+                <Input
+                  id="fee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="1500.00"
+                  {...register("fee")}
+                />
+                {errors.fee ? (
+                  <p className="text-sm text-destructive">
+                    {errors.fee.message}
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-2">
