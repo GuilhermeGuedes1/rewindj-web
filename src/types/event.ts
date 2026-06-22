@@ -25,7 +25,8 @@ export interface EventDetails {
   address: string;
   city: string;
   state: string;
-  status?: string | null;
+  status?: "NEGOTIATING" | "CONFIRMED" | "LOST" | null;
+  fee?: number | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
   hasContract?: boolean | null;
@@ -41,14 +42,15 @@ export type Event = EventDetails;
 export interface CreateEventPayload {
   title: string;
   eventDate: string;
-  startTime: string;
-  endTime: string;
+  startTime?: string | null;
+  endTime?: string | null;
   setDuration?: string | null;
   venueName: string;
   address: string;
   city: string;
   state: string;
   status: "NEGOTIATING" | "CONFIRMED" | "LOST" | null;
+  fee?: number | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
   hasContract?: boolean;

@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { useParams } from "next/navigation";
+
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,9 +25,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { eventSchema, type EventFormValues } from "@/schemas/event.schema";
 import { aiService } from "@/services/ai.service";
-import { createEventService } from "@/services/events.service";
 import { listArtistsService } from "@/services/artists.service";
 import type { Artist } from "@/types/artist";
+
+import {
+  getEventByIdService,
+  updateEventService,
+} from "@/services/events.service";
 
 function normalizeDate(value?: string | null) {
   if (!value) return "";
@@ -78,9 +84,12 @@ function formatCurrencyInput(value?: number | string | null) {
   return String(numberValue);
 }
 
-export default function NewEventPage() {
-  const router = useRouter();
+export default function EditEventPage() {
   const { user } = useAuth();
+
+  const router = useRouter();
+  const params = useParams();
+  const id = params.id as string;
 
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artistsLoading, setArtistsLoading] = useState(true);
@@ -96,6 +105,7 @@ export default function NewEventPage() {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -142,6 +152,43 @@ export default function NewEventPage() {
 
     loadArtists();
   }, [router, user?.role]);
+
+  useEffect(() => {
+    async function loadEvent() {
+      try {
+        const event = await getEventByIdService(id);
+
+        reset({
+          title: event.title,
+          eventDate: event.eventDate?.slice(0, 10) ?? "",
+          startTime: event.startTime ?? "",
+          endTime: event.endTime ?? "",
+          setDuration: event.setDuration ?? "",
+          venueName: event.venueName ?? "",
+          address: event.address ?? "",
+          city: event.city ?? "",
+          state: event.state ?? "",
+          fee: event.fee?.toString() ?? "",
+          paymentDate: event.paymentDate?.slice(0, 10) ?? "",
+          paymentMethod: event.paymentMethod ?? "",
+          status: event.status ?? "NEGOTIATING",
+          hasContract: event.hasContract ?? false,
+          artistId: event.artist?.id ?? "",
+          clientName: event.client?.name ?? "",
+          clientPhone: event.client?.phone ?? "",
+          clientEmail: event.client?.email ?? "",
+          clientCompanyName: event.client?.companyName ?? "",
+          notes: event.notes ?? "",
+        });
+      } catch (error) {
+        console.error("Erro ao carregar evento:", error);
+      }
+    }
+
+    if (id) {
+      loadEvent();
+    }
+  }, [id, reset]);
 
   async function handleGenerateDraft() {
     setAiError(null);
@@ -235,7 +282,7 @@ export default function NewEventPage() {
     setError(null);
 
     try {
-      await createEventService({
+      await updateEventService(id, {
         title: values.title,
         eventDate: values.eventDate,
         startTime: values.startTime || null,
@@ -258,7 +305,7 @@ export default function NewEventPage() {
         clientCompanyName: values.clientCompanyName ?? "",
       });
 
-      router.push("/events");
+      router.push(`/events/${id}`);
     } catch (error) {
       const message = isAxiosError(error)
         ? error.response?.data?.message
@@ -272,8 +319,8 @@ export default function NewEventPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Novo evento"
-        title="Crie uma noite memorável"
+        eyebrow="Editar evento"
+        title="Atualizar evento"
         description="Use IA para transformar uma mensagem do cliente em um rascunho de evento revisável."
         action={
           <Button variant="outline" asChild>
@@ -620,7 +667,7 @@ export default function NewEventPage() {
               ) : (
                 <CalendarPlus />
               )}
-              Salvar evento
+              Salvar alterações
             </Button>
           </form>
         </CardContent>

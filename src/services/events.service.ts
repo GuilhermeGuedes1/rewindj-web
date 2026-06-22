@@ -13,5 +13,12 @@ export async function listEventsService() {
 
 export async function getEventByIdService(id: string) {
   const response = await api.get<EventDetails>(`/events/${id}`);
+  console.log(response.data);
+  return response.data;
+}
+
+export async function updateEventService(id: string, data: CreateEventPayload) {
+  const response = await api.patch<Event>(`/events/${id}`, data);
+
   return response.data;
 }
