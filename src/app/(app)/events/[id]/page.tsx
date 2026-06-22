@@ -20,6 +20,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getEventByIdService } from "@/services/events.service";
 import type { EventDetails } from "@/types/event";
 
+function formatCurrency(value?: number | string | null) {
+  if (value === null || value === undefined) {
+    return "Não informado";
+  }
+
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value));
+}
+
 function fallback(value?: string | null) {
   return value && value.trim() ? value : "Não informado";
 }
@@ -106,12 +117,18 @@ export default function EventDetailsPage() {
         title={event?.title ?? "Evento"}
         description="Informações completas de agenda, local, artista e cliente."
         action={
-          <Button variant="outline" asChild>
-            <Link href="/events">
-              <ArrowLeft />
-              Voltar
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/events">
+                <ArrowLeft />
+                Voltar
+              </Link>
+            </Button>
+
+            <Button asChild>
+              <Link href={`/events/${event?.id}/edit`}>Editar</Link>
+            </Button>
+          </div>
         }
       />
 
@@ -155,6 +172,11 @@ export default function EventDetailsPage() {
                 <div className="flex items-center gap-2">
                   <Music className="size-4 text-primary" />
                   Duração: {fallback(event.setDuration)}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 text-primary" />
+                  Cachê: {formatCurrency(event.fee)}
                 </div>
 
                 <div className="flex items-center gap-2">

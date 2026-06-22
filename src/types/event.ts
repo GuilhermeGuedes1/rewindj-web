@@ -25,7 +25,7 @@ export interface EventDetails {
   address: string;
   city: string;
   state: string;
-  status?: string | null;
+  status?: "NEGOTIATING" | "CONFIRMED" | "LOST" | null;
   fee?: number | null;
   paymentDate?: string | null;
   paymentMethod?: string | null;
