@@ -25,7 +25,6 @@ function getStatusLabel(status?: string | null) {
 }
 
 export function EventCard({ event, featured = false }: EventCardProps) {
-  console.log(event);
   const artistName =
     event.artist?.stageName && event.artist.stageName !== "string"
       ? event.artist.stageName

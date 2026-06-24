@@ -77,6 +77,10 @@ export default function ArtistDetailsPage() {
                 Voltar
               </Link>
             </Button>
+
+            <Button asChild>
+              <Link href={`/artists/${params.id}/edit`}>Editar artista</Link>
+            </Button>
           </div>
         }
       />

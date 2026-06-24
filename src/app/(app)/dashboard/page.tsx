@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarCheck, Clock3, Sparkles } from "lucide-react";
+import { CalendarCheck, Clock3, Sparkles, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Event } from "@/types/event";
@@ -42,8 +42,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadDashboard() {
+      if (!user) return;
+
       try {
-        if (isArtist) {
+        setIsLoading(true);
+
+        if (user.role === "ARTIST") {
           const [profileData, eventData] = await Promise.all([
             getMyArtistProfileService(),
             listMyArtistEventsService(),
@@ -69,7 +73,7 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
-  }, [isArtist]);
+  }, [user]);
 
   const upcomingEvents = useMemo(
     () => events.filter(isFutureEvent).sort(sortByEventDate),
@@ -166,14 +170,25 @@ export default function DashboardPage() {
         {isArtist && (
           <Card className="orbit-shell overflow-hidden">
             <CardContent className="p-6">
-              <div className="mb-6">
-                <Badge variant="silver" className="mb-3">
-                  Perfil artístico
-                </Badge>
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <Badge variant="silver" className="mb-3">
+                    Perfil artístico
+                  </Badge>
 
-                <h2 className="text-xl font-semibold tracking-normal">
-                  Meus dados
-                </h2>
+                  <h2 className="text-xl font-semibold tracking-normal">
+                    Meus dados
+                  </h2>
+                </div>
+
+                {artistProfile?.id && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href={`/artists/${artistProfile.id}/edit`}>
+                      <Pencil className="size-4" />
+                      Editar
+                    </Link>
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-3">

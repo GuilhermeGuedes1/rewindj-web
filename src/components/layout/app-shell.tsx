@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           className="grid gap-1"
           style={{
-            gridTemplateColumns: `repeat(${visibleNavItems.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${visibleNavItems.length + 1}, minmax(0, 1fr))`,
           }}>
           {visibleNavItems.map((item) => {
             const Icon = item.icon;
@@ -144,6 +144,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
+
+          <button
+            type="button"
+            onClick={logout}
+            className="flex h-12 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+            <LogOut className="size-4" />
+            Sair
+          </button>
         </div>
       </nav>
     </main>

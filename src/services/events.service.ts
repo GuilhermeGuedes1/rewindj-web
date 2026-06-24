@@ -13,7 +13,7 @@ export async function listEventsService() {
 
 export async function getEventByIdService(id: string) {
   const response = await api.get<EventDetails>(`/events/${id}`);
-  console.log(response.data);
+
   return response.data;
 }
 

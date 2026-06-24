@@ -1,13 +1,8 @@
 import { api } from "@/libs/axios";
 import { Artist } from "@/types/artist";
 import type { Event } from "@/types/event";
-
-export type CreateArtistPayload = {
-  name: string;
-  email: string;
-  phone?: string;
-  temporaryPassword?: string;
-};
+import { UpdateArtistPayload } from "@/types/artist";
+import { CreateArtistPayload } from "@/types/artist";
 
 export async function listArtistsService() {
   const response = await api.get<Artist[]>("/artists");
@@ -31,5 +26,13 @@ export async function listMyArtistEventsService() {
 
 export async function getArtistByIdService(id: string) {
   const response = await api.get<Artist>(`/artists/${id}`);
+  return response.data;
+}
+
+export async function updateArtistService(
+  id: string,
+  payload: UpdateArtistPayload,
+) {
+  const response = await api.patch<Artist>(`/artists/${id}`, payload);
   return response.data;
 }
