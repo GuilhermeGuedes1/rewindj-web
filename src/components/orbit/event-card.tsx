@@ -4,26 +4,11 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/types/event";
+import { formatEventDate } from "@/utils/formatEventDate";
 
 interface EventCardProps {
   event: Event;
   featured?: boolean;
-}
-
-function formatEventDate(value: string) {
-  if (!value) return "--";
-
-  const dateOnly = value.split("T")[0];
-  const [year, month, day] = dateOnly.split("-");
-
-  if (!year || !month || !day) return "--";
-
-  const monthName = new Intl.DateTimeFormat("pt-BR", {
-    month: "short",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));
-
-  return `${day} ${monthName}`;
 }
 
 function getStatusLabel(status?: string | null) {
@@ -46,7 +31,10 @@ export function EventCard({ event, featured = false }: EventCardProps) {
       ? event.artist.stageName
       : (event.artist?.name ?? "Artista não definido");
 
-  const formattedDate = formatEventDate(event.eventDate);
+  const formattedDate = formatEventDate(event.eventDate, {
+    day: "2-digit",
+    month: "short",
+  });
   const dateParts = formattedDate.split(" ");
 
   return (

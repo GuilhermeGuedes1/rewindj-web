@@ -19,6 +19,7 @@ import {
   listMyArtistEventsService,
 } from "@/services/artists.service";
 import { listEventsService } from "@/services/events.service";
+import { formatEventDate } from "@/utils/formatEventDate";
 
 function isFutureEvent(event: Event) {
   return new Date(event.eventDate).getTime() >= new Date().setHours(0, 0, 0, 0);
@@ -115,14 +116,7 @@ export default function DashboardPage() {
         <StatCard
           icon={Clock3}
           label={isArtist ? "Próximo show" : "Próximo evento"}
-          value={
-            nextEvent
-              ? new Intl.DateTimeFormat("pt-BR", {
-                  day: "2-digit",
-                  month: "short",
-                }).format(new Date(nextEvent.eventDate))
-              : "--"
-          }
+          value={nextEvent ? formatEventDate(nextEvent.eventDate) : "--"}
           detail={nextEvent?.venueName ?? "Agenda livre"}
         />
 

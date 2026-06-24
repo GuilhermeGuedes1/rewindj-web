@@ -54,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4">
         <div className="orbit-shell rounded-lg p-6 text-sm text-muted-foreground">
-          Preparando sua orbita...
+          Preparando o rewindj...
         </div>
       </main>
     );
@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className="flex size-10 items-center justify-center rounded-md bg-primary text-lg font-black text-primary-foreground shadow-glow">
                   O
                 </span>
-                <span className="text-lg font-semibold">Orbit</span>
+                <span className="text-lg font-semibold">Rewindj</span>
               </Link>
 
               <nav className="space-y-2">
@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     {user ? `${user.name} ` : "rewindj user"}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {user?.email ?? "demo@orbit.local"}
+                    {user?.email ?? "demo@rewindj.local"}
                   </p>
                 </div>
                 <Button

@@ -28,3 +28,8 @@ export async function listMyArtistEventsService() {
   const response = await api.get<Event[]>("/artists/me/events");
   return response.data;
 }
+
+export async function getArtistByIdService(id: string) {
+  const response = await api.get<Artist>(`/artists/${id}`);
+  return response.data;
+}

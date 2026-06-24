@@ -120,7 +120,7 @@ export default function ClientDetailsPage() {
       <PageHeader
         eyebrow="Detalhes do cliente"
         title={client?.name ?? "Cliente"}
-        description={client?.companyName ?? "Cliente Orbit"}
+        description={client?.companyName ?? "Cliente Rewindj"}
         action={
           <Button variant="outline" asChild>
             <Link href="/clients">

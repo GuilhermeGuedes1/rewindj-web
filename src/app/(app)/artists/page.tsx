@@ -183,7 +183,7 @@ export default function ArtistsPage() {
                     type="email"
                     value={inviteEmail}
                     onChange={(event) => setInviteEmail(event.target.value)}
-                    placeholder="artista@orbit.local"
+                    placeholder="artista@rewindj.local"
                   />
                 </div>
 

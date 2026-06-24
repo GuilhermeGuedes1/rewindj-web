@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getEventByIdService } from "@/services/events.service";
 import type { EventDetails } from "@/types/event";
+import { formatEventDate } from "@/utils/formatEventDate";
 
 function formatCurrency(value?: number | string | null) {
   if (value === null || value === undefined) {
@@ -33,24 +34,6 @@ function formatCurrency(value?: number | string | null) {
 
 function fallback(value?: string | null) {
   return value && value.trim() ? value : "Não informado";
-}
-
-function formatEventDate(value?: string | null) {
-  if (!value) return "Não informado";
-
-  const dateOnly = value.split("T")[0];
-  const [year, month, day] = dateOnly.split("-");
-
-  if (!year || !month || !day) {
-    return "Não informado";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));
 }
 
 function getArtistName(event: EventDetails) {
@@ -163,7 +146,11 @@ export default function EventDetailsPage() {
               <div className="grid gap-4 text-sm text-muted-foreground sm:grid-cols-2">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="size-4 text-primary" />
-                  {formatEventDate(event.eventDate)}
+                  {formatEventDate(event.eventDate, {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </div>
 
                 <div className="flex items-center gap-2">
