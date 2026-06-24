@@ -10,6 +10,7 @@ import {
   UsersRound,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -119,9 +120,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex h-full flex-col justify-between">
             <div className="space-y-8">
               <Link href="/dashboard" className="flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-md bg-primary text-lg font-black text-primary-foreground shadow-glow">
-                  O
-                </span>
+                <Image
+                  src="/images/Logo.png"
+                  alt="Rewindj"
+                  width={40}
+                  height={40}
+                  className="size-10 rounded-md object-contain shadow-glow"
+                  priority
+                />
                 <span className="text-lg font-semibold">Rewindj</span>
               </Link>
 

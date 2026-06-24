@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,14 @@ export function AuthLayout({ children }: { children: ReactNode }) {
       <div className="mx-auto flex min-h-[calc(100vh-48px)] w-full max-w-6xl flex-col">
         <header className="flex items-center justify-between">
           <Link href="/login" className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-md bg-primary text-lg font-black text-primary-foreground shadow-glow">
-              O
-            </span>
+            <Image
+              src="/images/Logo.png"
+              alt="Rewindj"
+              width={40}
+              height={40}
+              className="size-10 rounded-md object-contain shadow-glow"
+              priority
+            />
             <span className="text-lg font-semibold tracking-normal">
               rewindj
             </span>
