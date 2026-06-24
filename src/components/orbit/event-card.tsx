@@ -11,16 +11,19 @@ interface EventCardProps {
 }
 
 function formatEventDate(value: string) {
-  const date = new Date(value);
+  if (!value) return "--";
 
-  if (isNaN(date.getTime())) {
-    return "--";
-  }
+  const dateOnly = value.split("T")[0];
+  const [year, month, day] = dateOnly.split("-");
 
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
+  if (!year || !month || !day) return "--";
+
+  const monthName = new Intl.DateTimeFormat("pt-BR", {
     month: "short",
-  }).format(date);
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));
+
+  return `${day} ${monthName}`;
 }
 
 function getStatusLabel(status?: string | null) {

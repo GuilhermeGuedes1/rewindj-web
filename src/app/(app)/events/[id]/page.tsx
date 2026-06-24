@@ -38,9 +38,10 @@ function fallback(value?: string | null) {
 function formatEventDate(value?: string | null) {
   if (!value) return "Não informado";
 
-  const date = new Date(value);
+  const dateOnly = value.split("T")[0];
+  const [year, month, day] = dateOnly.split("-");
 
-  if (isNaN(date.getTime())) {
+  if (!year || !month || !day) {
     return "Não informado";
   }
 
@@ -48,7 +49,8 @@ function formatEventDate(value?: string | null) {
     day: "2-digit",
     month: "long",
     year: "numeric",
-  }).format(date);
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));
 }
 
 function getArtistName(event: EventDetails) {
