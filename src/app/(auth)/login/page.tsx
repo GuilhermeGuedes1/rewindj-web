@@ -3,8 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, LogIn } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +28,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth.schema";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const router = useRouter();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -36,6 +38,16 @@ export default function LoginPage() {
       password: "",
     },
   });
+  
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading || isAuthenticated) {
+    return null;
+  }
 
   async function onSubmit(values: LoginFormValues) {
     setError(null);

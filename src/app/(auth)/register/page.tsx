@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import axios from "axios";
 import { ArrowLeft, ArrowRight, Loader2, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,7 +25,8 @@ import { cnpjMask } from "@/utils/cnpjMask";
 type RegisterStep = 1 | 2;
 
 export default function RegisterPage() {
-  const { register: registerUser } = useAuth();
+  const router = useRouter();
+  const { register: registerUser, isAuthenticated, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<RegisterStep>(1);
 
@@ -49,6 +50,15 @@ export default function RegisterPage() {
       organizationDocument: "",
     },
   });
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  if (isLoading || isAuthenticated) {
+    return null;
+  }
 
   async function handleNextStep() {
     setError(null);

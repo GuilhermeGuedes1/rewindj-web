@@ -298,7 +298,7 @@ export default function NewEventPage() {
               </h2>
 
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                Cole um briefing recebido no WhatsApp. O Orbit interpreta data,
+                Cole um briefing recebido no WhatsApp. O Rewindj interpreta data,
                 horário, local, cliente e artista para montar um rascunho.
               </p>
             </div>

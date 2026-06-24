@@ -5,6 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "rewindj",
   description: "Operations layer for DJs, agencies and premium events.",
+  icons: {
+    icon: "/favicon.ico?v=2",
+    shortcut: "/favicon.ico?v=2",
+  },
 };
 
 export default function RootLayout({

@@ -4,23 +4,11 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/types/event";
+import { formatEventDate } from "@/utils/formatEventDate";
 
 interface EventCardProps {
   event: Event;
   featured?: boolean;
-}
-
-function formatEventDate(value: string) {
-  const date = new Date(value);
-
-  if (isNaN(date.getTime())) {
-    return "--";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  }).format(date);
 }
 
 function getStatusLabel(status?: string | null) {
@@ -37,13 +25,15 @@ function getStatusLabel(status?: string | null) {
 }
 
 export function EventCard({ event, featured = false }: EventCardProps) {
-  console.log(event);
   const artistName =
     event.artist?.stageName && event.artist.stageName !== "string"
       ? event.artist.stageName
       : (event.artist?.name ?? "Artista não definido");
 
-  const formattedDate = formatEventDate(event.eventDate);
+  const formattedDate = formatEventDate(event.eventDate, {
+    day: "2-digit",
+    month: "short",
+  });
   const dateParts = formattedDate.split(" ");
 
   return (

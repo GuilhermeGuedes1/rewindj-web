@@ -5,7 +5,6 @@ export const aiService = {
   async generateEventDraft(text: string): Promise<EventDraft> {
     const payload: GenerateEventDraftPayload = { text };
     const { data } = await api.post<EventDraft>("/ai/event-draft", payload);
-    console.log(data);
     return data;
   },
 };
