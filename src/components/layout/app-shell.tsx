@@ -4,18 +4,21 @@ import {
   CalendarDays,
   LayoutDashboard,
   LogOut,
+  Menu,
   Mic2,
   Plus,
-  Sparkles,
   UsersRound,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/utils/utils";
+import type { Artist } from "@/types/artist";
+import { getMyArtistProfileService } from "@/services/artists.service";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -30,6 +33,17 @@ const artistNavItems = [
   { href: "/events", label: "Eventos", icon: CalendarDays },
 ];
 
+const adminMobileNavItems = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/events", label: "Eventos", icon: CalendarDays },
+  { href: "/events/create", label: "Novo", icon: Plus },
+];
+
+const adminMobileMenuItems = [
+  { href: "/artists", label: "Artistas", icon: Mic2 },
+  { href: "/clients", label: "Clientes", icon: UsersRound },
+];
+
 function isNavItemActive(pathname: string, href: string) {
   if (href === "/artists" || href === "/clients") {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -42,13 +56,51 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
+  const isArtist = user?.role === "ARTIST";
+  const shellDisplayName = isArtist
+    ? artistProfile?.stageName || artistProfile?.name || user?.name
+    : user?.name;
   const visibleNavItems = user?.role === "ARTIST" ? artistNavItems : navItems;
+  const mobileNavItems = isArtist ? artistNavItems : adminMobileNavItems;
+  const mobileMenuItems = isArtist ? [] : adminMobileMenuItems;
+  const mobileMenuActive = mobileMenuItems.some((item) =>
+    isNavItemActive(pathname, item.href),
+  );
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    async function loadArtistProfile() {
+      if (!user || user.role !== "ARTIST") {
+        setArtistProfile(null);
+        return;
+      }
+
+      try {
+        const data = await getMyArtistProfileService();
+        setArtistProfile(data);
+      } catch (error) {
+        console.error("Erro ao carregar perfil artístico no shell:", error);
+      }
+    }
+
+    loadArtistProfile();
+  }, [user]);
+
+  function handleLogout() {
+    setMobileMenuOpen(false);
+    logout();
+  }
 
   if (isLoading) {
     return (
@@ -98,7 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">
-                    {user ? `${user.name} ` : "rewindj user"}
+                    {shellDisplayName ?? "rewindj user"}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {user?.email ?? "demo@rewindj.local"}
@@ -125,9 +177,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div
           className="grid gap-1"
           style={{
-            gridTemplateColumns: `repeat(${visibleNavItems.length + 1}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${mobileNavItems.length + 1}, minmax(0, 1fr))`,
           }}>
-          {visibleNavItems.map((item) => {
+          {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const active = isNavItemActive(pathname, item.href);
 
@@ -147,13 +199,83 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <button
             type="button"
-            onClick={logout}
-            className="flex h-12 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-            <LogOut className="size-4" />
-            Sair
+            onClick={() => setMobileMenuOpen(true)}
+            className={cn(
+              "flex h-12 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+              (mobileMenuOpen || mobileMenuActive) &&
+                "bg-accent text-foreground",
+            )}
+            aria-haspopup="dialog"
+            aria-expanded={mobileMenuOpen}>
+            <Menu className="size-4" />
+            Menu
           </button>
         </div>
       </nav>
+
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm lg:hidden"
+          role="presentation"
+          onClick={() => setMobileMenuOpen(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Menu mobile"
+            className="fixed inset-x-3 bottom-20 rounded-lg border border-border bg-card/95 p-4 shadow-panel"
+            onClick={(event) => event.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">
+                  {shellDisplayName ?? "Rewindj user"}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user?.email ?? "demo@rewindj.local"}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Fechar menu">
+                <X />
+              </Button>
+            </div>
+
+            {mobileMenuItems.length > 0 && (
+              <nav className="space-y-2">
+                {mobileMenuItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isNavItemActive(pathname, item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex h-12 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                        active && "bg-accent text-foreground",
+                      )}>
+                      <Icon className="size-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            )}
+
+            <div className="mt-3 border-t border-border/70 pt-3">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex h-12 w-full items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                <LogOut className="size-4" />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

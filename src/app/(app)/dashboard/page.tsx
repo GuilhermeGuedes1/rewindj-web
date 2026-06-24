@@ -80,14 +80,6 @@ export default function DashboardPage() {
     [events],
   );
 
-  const pastEvents = useMemo(
-    () =>
-      events
-        .filter((event) => !isFutureEvent(event))
-        .sort((first, second) => sortByEventDate(second, first)),
-    [events],
-  );
-
   const nextEvent = upcomingEvents[0];
 
   return (
