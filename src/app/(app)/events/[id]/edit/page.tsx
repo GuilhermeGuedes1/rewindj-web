@@ -13,9 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
 import { useParams } from "next/navigation";
-
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -82,6 +80,10 @@ function formatCurrencyInput(value?: number | string | null) {
   if (Number.isNaN(numberValue)) return "";
 
   return String(numberValue);
+}
+
+function hasValue<T>(value: T | null | undefined | ""): value is T {
+  return value !== null && value !== undefined && value !== "";
 }
 
 export default function EditEventPage() {
@@ -159,7 +161,7 @@ export default function EditEventPage() {
         const event = await getEventByIdService(id);
 
         reset({
-          title: event.title,
+          title: event.title ?? "",
           eventDate: event.eventDate?.slice(0, 10) ?? "",
           startTime: event.startTime ?? "",
           endTime: event.endTime ?? "",
@@ -202,73 +204,127 @@ export default function EditEventPage() {
     try {
       setAiLoading(true);
 
-      const draft = await aiService.generateEventDraft(aiMessage);
+      const draft = await aiService.generateEventDraft(aiMessage, "edit");
 
-      setValue("title", draft.title ?? "", { shouldValidate: true });
-      setValue("eventDate", normalizeDate(draft.eventDate), {
-        shouldValidate: true,
-      });
-      setValue("startTime", normalizeTime(draft.startTime), {
-        shouldValidate: true,
-      });
-      setValue("endTime", normalizeTime(draft.endTime), {
-        shouldValidate: true,
-      });
-      setValue("setDuration", draft.setDuration ?? "", {
-        shouldValidate: true,
-      });
-      setValue("venueName", draft.venueName ?? "", { shouldValidate: true });
-      setValue("address", draft.address ?? "", { shouldValidate: true });
-      setValue("city", draft.city ?? "", { shouldValidate: true });
-      setValue("state", draft.state ?? "", { shouldValidate: true });
-      setValue("paymentDate", normalizeDate(draft.paymentDate), {
-        shouldValidate: true,
-      });
+      if (hasValue(draft.title)) {
+        setValue("title", draft.title, { shouldValidate: true });
+      }
 
-      setValue("fee", formatCurrencyInput(draft.fee), {
-        shouldValidate: true,
-      });
+      if (hasValue(draft.eventDate)) {
+        setValue("eventDate", normalizeDate(draft.eventDate), {
+          shouldValidate: true,
+        });
+      }
 
-      setValue("paymentMethod", draft.paymentMethod ?? "", {
-        shouldValidate: true,
-      });
+      if (hasValue(draft.startTime)) {
+        setValue("startTime", normalizeTime(draft.startTime), {
+          shouldValidate: true,
+        });
+      }
 
-      setValue("status", draft.status ?? "NEGOTIATING", {
-        shouldValidate: true,
-      });
+      if (hasValue(draft.endTime)) {
+        setValue("endTime", normalizeTime(draft.endTime), {
+          shouldValidate: true,
+        });
+      }
 
-      setValue("hasContract", draft.hasContract ?? false, {
-        shouldValidate: true,
-      });
-      setValue("clientName", draft.clientName ?? "", { shouldValidate: true });
-      setValue("clientPhone", draft.clientPhone ?? "", {
-        shouldValidate: true,
-      });
-      setValue("clientEmail", draft.clientEmail ?? "", {
-        shouldValidate: true,
-      });
-      setValue("clientCompanyName", draft.clientCompanyName ?? "", {
-        shouldValidate: true,
-      });
-      setValue("notes", draft.notes ?? "", { shouldValidate: true });
+      if (hasValue(draft.setDuration)) {
+        setValue("setDuration", draft.setDuration, {
+          shouldValidate: true,
+        });
+      }
 
-      const normalizedDraftArtist = normalizeName(draft.artistName);
+      if (hasValue(draft.venueName)) {
+        setValue("venueName", draft.venueName, { shouldValidate: true });
+      }
 
-      const matchedArtist = artists.find((artist) => {
-        const normalizedArtist = normalizeName(
-          `${artist.name} ${artist.stageName ?? ""}`,
-        );
+      if (hasValue(draft.address)) {
+        setValue("address", draft.address, { shouldValidate: true });
+      }
 
-        return (
-          normalizedArtist.includes(normalizedDraftArtist) ||
-          normalizedDraftArtist.includes(normalizedArtist)
-        );
-      });
+      if (hasValue(draft.city)) {
+        setValue("city", draft.city, { shouldValidate: true });
+      }
 
-      if (matchedArtist) {
-        setValue("artistId", matchedArtist.id, { shouldValidate: true });
-      } else if (draft.artistName) {
-        setSuggestedArtistName(draft.artistName);
+      if (hasValue(draft.state)) {
+        setValue("state", draft.state, { shouldValidate: true });
+      }
+
+      if (hasValue(draft.paymentDate)) {
+        setValue("paymentDate", normalizeDate(draft.paymentDate), {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.fee)) {
+        setValue("fee", formatCurrencyInput(draft.fee), {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.paymentMethod)) {
+        setValue("paymentMethod", draft.paymentMethod, {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.status)) {
+        setValue("status", draft.status, {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.hasContract)) {
+        setValue("hasContract", draft.hasContract, {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.clientName)) {
+        setValue("clientName", draft.clientName, { shouldValidate: true });
+      }
+
+      if (hasValue(draft.clientPhone)) {
+        setValue("clientPhone", draft.clientPhone, {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.clientEmail)) {
+        setValue("clientEmail", draft.clientEmail, {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.clientCompanyName)) {
+        setValue("clientCompanyName", draft.clientCompanyName, {
+          shouldValidate: true,
+        });
+      }
+
+      if (hasValue(draft.notes)) {
+        setValue("notes", draft.notes, { shouldValidate: true });
+      }
+
+      if (hasValue(draft.artistName)) {
+        const normalizedDraftArtist = normalizeName(draft.artistName);
+
+        const matchedArtist = artists.find((artist) => {
+          const normalizedArtist = normalizeName(
+            `${artist.name} ${artist.stageName ?? ""}`,
+          );
+
+          return (
+            normalizedArtist.includes(normalizedDraftArtist) ||
+            normalizedDraftArtist.includes(normalizedArtist)
+          );
+        });
+
+        if (matchedArtist) {
+          setValue("artistId", matchedArtist.id, { shouldValidate: true });
+        } else {
+          setSuggestedArtistName(draft.artistName);
+        }
       }
     } catch (error) {
       console.error("Erro ao gerar rascunho com IA:", error);
@@ -341,12 +397,12 @@ export default function EditEventPage() {
 
             <div className="space-y-2">
               <h2 className="text-xl font-semibold tracking-normal">
-                Preencher com IA
+                Atualizar com IA
               </h2>
 
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                Cole um briefing recebido no WhatsApp. O Rewindj interpreta data,
-                horário, local, cliente e artista para montar um rascunho.
+                Cole um briefing recebido no WhatsApp. O Rewindj interpreta
+                data, horário, local, cliente e artista para montar um rascunho.
               </p>
             </div>
           </div>
