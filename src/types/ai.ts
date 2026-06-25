@@ -1,6 +1,7 @@
-export interface GenerateEventDraftPayload {
+export type GenerateEventDraftPayload = {
   text: string;
-}
+  mode: "create" | "edit";
+};
 
 export interface EventDraft {
   title: string | null;

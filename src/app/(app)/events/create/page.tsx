@@ -155,7 +155,7 @@ export default function NewEventPage() {
     try {
       setAiLoading(true);
 
-      const draft = await aiService.generateEventDraft(aiMessage);
+      const draft = await aiService.generateEventDraft(aiMessage, "create");
 
       setValue("title", draft.title ?? "", { shouldValidate: true });
       setValue("eventDate", normalizeDate(draft.eventDate), {
