@@ -7,6 +7,7 @@ import {
   Menu,
   Mic2,
   Plus,
+  UserCircle,
   UsersRound,
   X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/artists", label: "Artistas", icon: Mic2 },
   { href: "/clients", label: "Clientes", icon: UsersRound },
   { href: "/events/create", label: "Novo", icon: Plus },
+  { href: "/profile", label: "Meu Perfil", icon: UserCircle },
 ];
 
 const artistNavItems = [
@@ -43,6 +45,7 @@ const adminMobileNavItems = [
 const adminMobileMenuItems = [
   { href: "/artists", label: "Artistas", icon: Mic2 },
   { href: "/clients", label: "Clientes", icon: UsersRound },
+  { href: "/profile", label: "Meu Perfil", icon: UserCircle },
 ];
 
 function isNavItemActive(pathname: string, href: string) {
@@ -60,12 +63,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const isArtist = user?.role === "ARTIST";
+  const isIndependentDJ = user?.role === "CEO" && Boolean(user?.artistId);
   const shellDisplayName = isArtist
     ? artistProfile?.stageName || artistProfile?.name || user?.name
     : user?.name;
-  const visibleNavItems = user?.role === "ARTIST" ? artistNavItems : navItems;
+  const visibleNavItems =
+    user?.role === "ARTIST"
+      ? artistNavItems
+      : isIndependentDJ
+        ? navItems.filter((item) => item.href !== "/artists")
+        : navItems;
   const mobileNavItems = isArtist ? artistNavItems : adminMobileNavItems;
-  const mobileMenuItems = isArtist ? [] : adminMobileMenuItems;
+  const mobileMenuItems = isArtist
+    ? []
+    : isIndependentDJ
+      ? adminMobileMenuItems.filter((item) => item.href !== "/artists")
+      : adminMobileMenuItems;
   const mobileMenuActive = mobileMenuItems.some((item) =>
     isNavItemActive(pathname, item.href),
   );

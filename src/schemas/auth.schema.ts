@@ -33,5 +33,21 @@ export const registerSchema = z
     message: "As senhas não coincidem.",
   });
 
+export const independentDjRegisterSchema = z.object({
+  name: z.string().min(2, "Informe seu nome."),
+  stageName: z.string().min(2, "Informe seu nome artístico."),
+  email: z.string().email("Informe um email válido."),
+  phone: z
+    .string()
+    .refine(
+      (value) => value.replace(/\D/g, "").length === 11,
+      "Informe um telefone válido.",
+    ),
+  password: z.string().min(6, "Use ao menos 6 caracteres."),
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+export type IndependentDjRegisterFormValues = z.infer<
+  typeof independentDjRegisterSchema
+>;

@@ -11,12 +11,19 @@ export type RegisterData = {
   password: string;
 };
 
+export type UpdateMeData = {
+  name: string;
+  phone: string | null;
+};
+
 export type AuthUser = {
   sub?: string;
   id?: string;
   email: string;
   name: string;
+  phone?: string | null;
   role: "CEO" | "ADMIN" | "PRODUCER" | "ARTIST";
+  artistId?: string | null;
   organizationId: string | null;
   organizationName: string | null;
 };
@@ -35,7 +42,12 @@ export async function registerService(data: RegisterData) {
   return response.data;
 }
 
+export async function updateMeService(data: UpdateMeData) {
+  const response = await api.patch<AuthUser>("/auth/me", data);
+  return response.data;
+}
+
 export async function profileService() {
-  const response = await api.get<AuthUser>("/auth/profile");
+  const response = await api.get<AuthUser>("/auth/me");
   return response.data;
 }
