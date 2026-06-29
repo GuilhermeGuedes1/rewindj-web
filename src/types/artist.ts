@@ -16,7 +16,17 @@ export type Artist = {
 export type UpdateArtistPayload = {
   name: string;
   stageName: string;
+  birthDate?: string | null;
   phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pixKey?: string | null;
+};
+
+export type UpdateMyArtistPayload = {
+  stageName: string;
+  birthDate?: string | null;
   address?: string | null;
   city?: string | null;
   state?: string | null;

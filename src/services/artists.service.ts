@@ -1,11 +1,24 @@
 import { api } from "@/libs/axios";
 import { Artist } from "@/types/artist";
 import type { Event } from "@/types/event";
-import { UpdateArtistPayload } from "@/types/artist";
+import { UpdateArtistPayload, UpdateMyArtistPayload } from "@/types/artist";
 import { CreateArtistPayload } from "@/types/artist";
+
+export type RegisterArtistPayload = {
+  name: string;
+  stageName: string;
+  email: string;
+  password: string;
+  phone: string;
+};
 
 export async function listArtistsService() {
   const response = await api.get<Artist[]>("/artists");
+  return response.data;
+}
+
+export async function registerArtistService(data: RegisterArtistPayload) {
+  const response = await api.post("/artists/register", data);
   return response.data;
 }
 
@@ -16,6 +29,13 @@ export async function createArtistService(data: CreateArtistPayload) {
 
 export async function getMyArtistProfileService() {
   const response = await api.get<Artist>("/artists/me");
+  return response.data;
+}
+
+export async function updateMyArtistProfileService(
+  payload: UpdateMyArtistPayload,
+) {
+  const response = await api.patch<Artist>("/artists/me", payload);
   return response.data;
 }
 
