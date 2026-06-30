@@ -159,10 +159,7 @@ export default function ProfilePage() {
 
         setArtistProfile(data);
         setArtistForm(getInitialArtistForm(data));
-      } catch (error: any) {
-        console.log("Status:", error.response?.status);
-        console.log("Data:", error.response?.data);
-        console.error("Erro ao carregar perfil artístico:", error);
+      } catch {
         setArtistProfile(null);
         setArtistError("Perfil artístico ainda não encontrado.");
       } finally {
@@ -251,7 +248,7 @@ export default function ProfilePage() {
       });
       setIsEditingAccount(false);
       setAccountSuccess("Conta atualizada com sucesso.");
-    } catch (error: any) {
+    } catch (error) {
       setAccountError("Não foi possível salvar sua conta. Tente novamente.");
     } finally {
       setIsSavingAccount(false);
@@ -283,11 +280,7 @@ export default function ProfilePage() {
       setArtistForm(getInitialArtistForm(updatedArtist));
       setIsEditingArtist(false);
       setArtistSuccess("Perfil artístico atualizado com sucesso.");
-    } catch (error: any) {
-      console.error(
-        "Erro ao atualizar perfil artístico:",
-        error.response?.data,
-      );
+    } catch {
       setArtistError("Não foi possível salvar seu perfil. Tente novamente.");
     } finally {
       setIsSavingArtist(false);

@@ -2,7 +2,6 @@
 
 import {
   ArrowLeft,
-  CalendarDays,
   Loader2,
   MapPin,
   Save,
@@ -28,11 +27,6 @@ import type { Artist, UpdateArtistPayload } from "@/types/artist";
 function normalizeOptional(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-}
-
-function toDateInputValue(value?: string | null) {
-  if (!value) return "";
-  return value.split("T")[0];
 }
 
 export default function ArtistEditPage() {
@@ -74,8 +68,7 @@ export default function ArtistEditPage() {
           state: data.state ?? "",
           pixKey: data.pixKey ?? "",
         });
-      } catch (error) {
-        console.error("Erro ao buscar artista:", error);
+      } catch {
         setError("Não foi possível carregar os dados deste artista.");
       } finally {
         setIsLoading(false);
@@ -114,8 +107,7 @@ export default function ArtistEditPage() {
       await updateArtistService(params.id, payload);
 
       router.push(`/artists/${params.id}`);
-    } catch (error) {
-      console.error("Erro ao atualizar artista:", error);
+    } catch {
       setError("Não foi possível salvar as alterações do artista.");
     } finally {
       setIsSaving(false);
