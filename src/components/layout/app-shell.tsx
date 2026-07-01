@@ -27,7 +27,7 @@ const navItems = [
   { href: "/events", label: "Eventos", icon: CalendarDays },
   { href: "/artists", label: "Artistas", icon: Mic2 },
   { href: "/clients", label: "Clientes", icon: UsersRound },
-  { href: "/events/create", label: "Novo", icon: Plus },
+  { href: "/events/create", label: "Novo Evento", icon: Plus },
   { href: "/profile", label: "Meu Perfil", icon: UserCircle },
 ];
 

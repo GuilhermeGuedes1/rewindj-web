@@ -5,14 +5,19 @@ import { isAxiosError } from "axios";
 import {
   ArrowLeft,
   CalendarPlus,
+  Check,
   Loader2,
   Sparkles,
   Wand2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type FieldErrors,
+  type UseFormRegister,
+  useForm,
+} from "react-hook-form";
 
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
@@ -21,11 +26,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { eventSchema, type EventFormValues } from "@/schemas/event.schema";
+import {
+  eventSchema,
+  paymentMethodLabels,
+  paymentMethodValues,
+  type EventFormValues,
+} from "@/schemas/event.schema";
 import { aiService } from "@/services/ai.service";
 import { createEventService } from "@/services/events.service";
 import { listArtistsService } from "@/services/artists.service";
+import { getClientsService } from "@/services/clients.service";
 import type { Artist } from "@/types/artist";
+import type { Client } from "@/types/client";
+import type { CreateEventPayload } from "@/types/event";
+import { cn } from "@/utils/utils";
 
 function normalizeDate(value?: string | null) {
   if (!value) return "";
@@ -67,6 +81,18 @@ function normalizeName(value?: string | null) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function normalizePhone(value?: string | null) {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+function normalizeEmail(value?: string | null) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function normalizeClientName(value?: string | null) {
+  return (value ?? "").trim().toLowerCase();
+}
+
 function formatCurrencyInput(value?: number | string | null) {
   if (value === null || value === undefined || value === "") return "";
 
@@ -78,12 +104,307 @@ function formatCurrencyInput(value?: number | string | null) {
   return String(numberValue);
 }
 
+function normalizePaymentMethod(
+  value?: string | null,
+): EventFormValues["paymentMethod"] {
+  if (!value) return "";
+
+  const normalizedValue = normalizeName(value);
+  const aliases: Record<string, EventFormValues["paymentMethod"]> = {
+    deposito: "DEPOSIT",
+    deposit: "DEPOSIT",
+    transferencia: "DEPOSIT",
+    transfer: "DEPOSIT",
+    integralnoevento: "FULL_ON_EVENT",
+    pagamentonoevento: "FULL_ON_EVENT",
+    noevento: "FULL_ON_EVENT",
+    invoice: "INVOICE",
+    notafiscal: "INVOICE",
+    boleto: "INVOICE",
+    parcelado: "INSTALLMENTS",
+    parcelas: "INSTALLMENTS",
+    installments: "INSTALLMENTS",
+    pix: "PIX",
+    dinheiro: "CASH",
+    cash: "CASH",
+    outro: "OTHER",
+    other: "OTHER",
+  };
+
+  const enumValue = paymentMethodValues.find(
+    (method) => normalizeName(method) === normalizedValue,
+  );
+
+  return enumValue ?? aliases[normalizedValue] ?? "";
+}
+
+function formatClientMeta(client: Client) {
+  return [client.companyName, client.phone].filter(Boolean).join(" • ");
+}
+
+type ClientMatchInput = {
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+};
+
+function getClientMatchSignature({ name, phone, email }: ClientMatchInput) {
+  return [
+    normalizeClientName(name),
+    normalizePhone(phone),
+    normalizeEmail(email),
+  ].join("|");
+}
+
+function findExistingClientMatch(input: ClientMatchInput, clients: Client[]) {
+  const phone = normalizePhone(input.phone);
+  const email = normalizeEmail(input.email);
+  const name = normalizeClientName(input.name);
+
+  if (phone) {
+    const matchedByPhone = clients.find(
+      (client) => normalizePhone(client.phone) === phone,
+    );
+
+    if (matchedByPhone) return matchedByPhone;
+  }
+
+  if (email) {
+    const matchedByEmail = clients.find(
+      (client) => normalizeEmail(client.email) === email,
+    );
+
+    if (matchedByEmail) return matchedByEmail;
+  }
+
+  if (name) {
+    return clients.find((client) => normalizeClientName(client.name) === name);
+  }
+
+  return undefined;
+}
+
+type ClientSectionProps = {
+  register: UseFormRegister<EventFormValues>;
+  errors: FieldErrors<EventFormValues>;
+  clientMode: EventFormValues["clientMode"];
+  selectedClientId?: string;
+  clients: Client[];
+  filteredClients: Client[];
+  clientsLoading: boolean;
+  clientSearch: string;
+  autoSelectedMessage: string | null;
+  onClientSearchChange: (value: string) => void;
+  onExistingModeSelect: () => void;
+  onNewModeSelect: () => void;
+  onClientSelect: (clientId: string) => void;
+};
+
+function ClientSection({
+  register,
+  errors,
+  clientMode,
+  selectedClientId,
+  clients,
+  filteredClients,
+  clientsLoading,
+  clientSearch,
+  autoSelectedMessage,
+  onClientSearchChange,
+  onExistingModeSelect,
+  onNewModeSelect,
+  onClientSelect,
+}: ClientSectionProps) {
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+      <input type="hidden" {...register("clientMode")} />
+      <input type="hidden" {...register("clientId")} />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold tracking-normal">Cliente</h2>
+          <p className="text-sm text-muted-foreground">
+            Escolha um cliente cadastrado ou informe um novo contato.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 rounded-md border border-border bg-background/40 p-1">
+          <button
+            type="button"
+            className={cn(
+              "rounded-sm px-3 py-2 text-sm font-semibold transition-colors",
+              clientMode === "existing"
+                ? "bg-primary text-primary-foreground shadow-glow"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+            onClick={onExistingModeSelect}>
+            Cliente existente
+          </button>
+
+          <button
+            type="button"
+            className={cn(
+              "rounded-sm px-3 py-2 text-sm font-semibold transition-colors",
+              clientMode === "new"
+                ? "bg-primary text-primary-foreground shadow-glow"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+            onClick={onNewModeSelect}>
+            Novo cliente
+          </button>
+        </div>
+      </div>
+
+      {clientMode === "existing" ? (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="clientSearch">Buscar cliente</Label>
+            <Input
+              id="clientSearch"
+              value={clientSearch}
+              onChange={(event) => onClientSearchChange(event.target.value)}
+              placeholder="Nome, empresa ou telefone"
+              disabled={clientsLoading}
+            />
+          </div>
+
+          {clientsLoading ? (
+            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+              Carregando clientes...
+            </div>
+          ) : clients.length === 0 ? (
+            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+              Nenhum cliente cadastrado ainda. Use o modo Novo cliente para
+              informar os dados deste evento.
+            </div>
+          ) : filteredClients.length === 0 ? (
+            <div className="rounded-md border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+              Nenhum cliente encontrado para esta busca.
+            </div>
+          ) : (
+            <div className="max-h-72 space-y-2 overflow-y-auto rounded-md border border-border bg-background/30 p-2">
+              {filteredClients.map((client) => {
+                const isSelected = selectedClientId === client.id;
+
+                return (
+                  <button
+                    key={client.id}
+                    type="button"
+                    className={cn(
+                      "flex w-full items-start justify-between gap-3 rounded-md border px-3 py-3 text-left transition-colors",
+                      isSelected
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-transparent hover:bg-accent hover:text-foreground",
+                    )}
+                    onClick={() => onClientSelect(client.id)}>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold">
+                        {client.name}
+                      </span>
+                      {formatClientMeta(client) ? (
+                        <span className="block truncate text-sm text-muted-foreground">
+                          {formatClientMeta(client)}
+                        </span>
+                      ) : null}
+                    </span>
+
+                    {isSelected ? (
+                      <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {autoSelectedMessage ? (
+            <p className="text-sm text-primary">{autoSelectedMessage}</p>
+          ) : null}
+
+          {errors.clientId ? (
+            <p className="text-sm text-destructive">
+              {errors.clientId.message}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="clientName">Cliente</Label>
+              <Input
+                id="clientName"
+                placeholder="Mariana Silva"
+                {...register("clientName")}
+              />
+              {errors.clientName ? (
+                <p className="text-sm text-destructive">
+                  {errors.clientName.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="clientPhone">Telefone do cliente</Label>
+              <Input
+                id="clientPhone"
+                placeholder="21999999999"
+                {...register("clientPhone")}
+              />
+              {errors.clientPhone ? (
+                <p className="text-sm text-destructive">
+                  {errors.clientPhone.message}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="clientEmail">Email do cliente</Label>
+              <Input
+                id="clientEmail"
+                type="email"
+                placeholder="mariana@email.com"
+                {...register("clientEmail")}
+              />
+              {errors.clientEmail ? (
+                <p className="text-sm text-destructive">
+                  {errors.clientEmail.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="clientCompanyName">Empresa do cliente</Label>
+              <Input
+                id="clientCompanyName"
+                placeholder="Opcional"
+                {...register("clientCompanyName")}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function NewEventPage() {
   const router = useRouter();
   const { user } = useAuth();
 
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artistsLoading, setArtistsLoading] = useState(true);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
+  const [clientSearch, setClientSearch] = useState("");
+  const [autoSelectedClientMessage, setAutoSelectedClientMessage] = useState<
+    string | null
+  >(null);
+  const [suppressedAutoMatchSignature, setSuppressedAutoMatchSignature] =
+    useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aiMessage, setAiMessage] = useState("");
   const [aiError, setAiError] = useState<string | null>(null);
@@ -96,6 +417,7 @@ export default function NewEventPage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues>({
     resolver: zodResolver(eventSchema),
@@ -115,6 +437,8 @@ export default function NewEventPage() {
       status: "NEGOTIATING",
       hasContract: false,
       artistId: "",
+      clientMode: "existing",
+      clientId: "",
       clientName: "",
       clientPhone: "",
       clientEmail: "",
@@ -122,6 +446,53 @@ export default function NewEventPage() {
       notes: "",
     },
   });
+
+  const clientMode = watch("clientMode");
+  const selectedClientId = watch("clientId");
+  const clientName = watch("clientName");
+  const clientPhone = watch("clientPhone");
+  const clientEmail = watch("clientEmail");
+
+  const clientMatchInput = useMemo(
+    () => ({
+      name: clientName,
+      phone: clientPhone,
+      email: clientEmail,
+    }),
+    [clientEmail, clientName, clientPhone],
+  );
+
+  const clientMatchSignature = useMemo(
+    () => getClientMatchSignature(clientMatchInput),
+    [clientMatchInput],
+  );
+
+  const filteredClients = useMemo(() => {
+    const query = normalizeName(clientSearch);
+
+    if (!query) return clients;
+
+    return clients.filter((client) =>
+      normalizeName(
+        `${client.name} ${client.companyName ?? ""} ${client.phone}`,
+      ).includes(query),
+    );
+  }, [clientSearch, clients]);
+
+  const loadClients = useCallback(async () => {
+    if (clientsLoaded || clientsLoading) return;
+
+    try {
+      setClientsLoading(true);
+      const data = await getClientsService();
+      setClients(data);
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error);
+    } finally {
+      setClientsLoaded(true);
+      setClientsLoading(false);
+    }
+  }, [clientsLoaded, clientsLoading]);
 
   useEffect(() => {
     if (user?.role === "ARTIST") {
@@ -143,6 +514,50 @@ export default function NewEventPage() {
     loadArtists();
   }, [router, user?.role]);
 
+  useEffect(() => {
+    if (clientMode !== "existing" || clientsLoaded || clientsLoading) return;
+
+    loadClients();
+  }, [clientMode, clientsLoaded, clientsLoading, loadClients]);
+
+  useEffect(() => {
+    if (clientMode !== "new" || !clientMatchSignature.replace(/\|/g, "")) {
+      return;
+    }
+
+    if (!clientsLoaded) {
+      loadClients();
+      return;
+    }
+
+    if (suppressedAutoMatchSignature === clientMatchSignature) {
+      return;
+    }
+
+    const matchedClient = findExistingClientMatch(clientMatchInput, clients);
+
+    if (!matchedClient) {
+      setAutoSelectedClientMessage(null);
+      return;
+    }
+
+    setValue("clientMode", "existing", { shouldValidate: true });
+    setValue("clientId", matchedClient.id, { shouldValidate: true });
+    setClientSearch(matchedClient.name);
+    setAutoSelectedClientMessage(
+      "Cliente existente encontrado e selecionado automaticamente.",
+    );
+  }, [
+    clientMatchInput,
+    clientMatchSignature,
+    clientMode,
+    clients,
+    clientsLoaded,
+    loadClients,
+    setValue,
+    suppressedAutoMatchSignature,
+  ]);
+
   async function handleGenerateDraft() {
     setAiError(null);
     setSuggestedArtistName(null);
@@ -157,6 +572,10 @@ export default function NewEventPage() {
 
       const draft = await aiService.generateEventDraft(aiMessage, "create");
 
+      setSuppressedAutoMatchSignature(null);
+      setAutoSelectedClientMessage(null);
+      setValue("clientMode", "new", { shouldValidate: true });
+      setValue("clientId", "", { shouldValidate: true });
       setValue("title", draft.title ?? "", { shouldValidate: true });
       setValue("eventDate", normalizeDate(draft.eventDate), {
         shouldValidate: true,
@@ -182,7 +601,7 @@ export default function NewEventPage() {
         shouldValidate: true,
       });
 
-      setValue("paymentMethod", draft.paymentMethod ?? "", {
+      setValue("paymentMethod", normalizePaymentMethod(draft.paymentMethod), {
         shouldValidate: true,
       });
 
@@ -235,7 +654,7 @@ export default function NewEventPage() {
     setError(null);
 
     try {
-      await createEventService({
+      const eventPayload = {
         title: values.title,
         eventDate: values.eventDate,
         startTime: values.startTime || null,
@@ -252,11 +671,24 @@ export default function NewEventPage() {
         hasContract: values.hasContract,
         notes: values.notes ?? "",
         artistId: values.artistId,
-        clientName: values.clientName,
-        clientPhone: values.clientPhone ?? "",
-        clientEmail: values.clientEmail ?? "",
-        clientCompanyName: values.clientCompanyName ?? "",
-      });
+      };
+
+      const payload: CreateEventPayload =
+        values.clientMode === "existing"
+          ? {
+              ...eventPayload,
+              clientId: values.clientId ?? "",
+            }
+          : {
+              ...eventPayload,
+              clientName: values.clientName ?? "",
+              clientPhone: values.clientPhone ?? "",
+              clientEmail: values.clientEmail ?? "",
+              clientCompanyName: values.clientCompanyName ?? "",
+            };
+
+      console.log("PAYLOAD", payload);
+      await createEventService(payload);
 
       router.push("/events");
     } catch (error) {
@@ -267,6 +699,25 @@ export default function NewEventPage() {
       console.error(isAxiosError(error) ? error.response?.data : error);
       setError(message ?? "Nao foi possivel criar o evento agora.");
     }
+  }
+
+  function handleExistingModeSelect() {
+    setSuppressedAutoMatchSignature(null);
+    setAutoSelectedClientMessage(null);
+    setValue("clientMode", "existing", { shouldValidate: true });
+  }
+
+  function handleNewModeSelect() {
+    setSuppressedAutoMatchSignature(clientMatchSignature);
+    setAutoSelectedClientMessage(null);
+    setValue("clientMode", "new", { shouldValidate: true });
+    setValue("clientId", "", { shouldValidate: true });
+  }
+
+  function handleClientSelect(clientId: string) {
+    setSuppressedAutoMatchSignature(null);
+    setAutoSelectedClientMessage(null);
+    setValue("clientId", clientId, { shouldValidate: true });
   }
 
   return (
@@ -298,8 +749,8 @@ export default function NewEventPage() {
               </h2>
 
               <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                Cole um briefing recebido no WhatsApp. O Rewindj interpreta data,
-                horário, local, cliente e artista para montar um rascunho.
+                Cole um briefing recebido no WhatsApp. O Rewindj interpreta
+                data, horário, local, cliente e artista para montar um rascunho.
               </p>
             </div>
           </div>
@@ -403,11 +854,24 @@ export default function NewEventPage() {
             <div className="grid gap-5 sm:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Forma de pagamento</Label>
-                <Input
+
+                <select
                   id="paymentMethod"
-                  placeholder="Pix, boleto, transferência..."
-                  {...register("paymentMethod")}
-                />
+                  className="flex h-12 w-full rounded-md border border-input bg-muted/55 px-4 py-2 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+                  {...register("paymentMethod")}>
+                  <option value="">Selecione</option>
+                  {paymentMethodValues.map((method) => (
+                    <option key={method} value={method}>
+                      {paymentMethodLabels[method]}
+                    </option>
+                  ))}
+                </select>
+
+                {errors.paymentMethod ? (
+                  <p className="text-sm text-destructive">
+                    {errors.paymentMethod.message}
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fee">Valor do cachê</Label>
@@ -522,7 +986,7 @@ export default function NewEventPage() {
               />
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="space-y-2">
               <div className="space-y-2">
                 <Label htmlFor="artistId">Artista</Label>
 
@@ -557,56 +1021,23 @@ export default function NewEventPage() {
                   </p>
                 ) : null}
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientName">Cliente</Label>
-                <Input
-                  id="clientName"
-                  placeholder="Mariana Silva"
-                  {...register("clientName")}
-                />
-                {errors.clientName ? (
-                  <p className="text-sm text-destructive">
-                    {errors.clientName.message}
-                  </p>
-                ) : null}
-              </div>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="clientPhone">Telefone do cliente</Label>
-                <Input
-                  id="clientPhone"
-                  placeholder="21999999999"
-                  {...register("clientPhone")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="clientEmail">Email do cliente</Label>
-                <Input
-                  id="clientEmail"
-                  type="email"
-                  placeholder="mariana@email.com"
-                  {...register("clientEmail")}
-                />
-                {errors.clientEmail ? (
-                  <p className="text-sm text-destructive">
-                    {errors.clientEmail.message}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="clientCompanyName">Empresa do cliente</Label>
-              <Input
-                id="clientCompanyName"
-                placeholder="Opcional"
-                {...register("clientCompanyName")}
-              />
-            </div>
+            <ClientSection
+              register={register}
+              errors={errors}
+              clientMode={clientMode}
+              selectedClientId={selectedClientId}
+              clients={clients}
+              filteredClients={filteredClients}
+              clientsLoading={clientsLoading}
+              clientSearch={clientSearch}
+              autoSelectedMessage={autoSelectedClientMessage}
+              onClientSearchChange={setClientSearch}
+              onExistingModeSelect={handleExistingModeSelect}
+              onNewModeSelect={handleNewModeSelect}
+              onClientSelect={handleClientSelect}
+            />
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
