@@ -21,7 +21,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
-import { eventSchema, type EventFormValues } from "@/schemas/event.schema";
+import {
+  eventSchema,
+  paymentMethodLabels,
+  paymentMethodValues,
+  type EventFormValues,
+} from "@/schemas/event.schema";
 import { aiService } from "@/services/ai.service";
 import { listArtistsService } from "@/services/artists.service";
 import type { Artist } from "@/types/artist";
@@ -86,6 +91,40 @@ function hasValue<T>(value: T | null | undefined | ""): value is T {
   return value !== null && value !== undefined && value !== "";
 }
 
+function normalizePaymentMethod(
+  value?: string | null,
+): EventFormValues["paymentMethod"] {
+  if (!value) return "";
+
+  const normalizedValue = normalizeName(value);
+  const aliases: Record<string, EventFormValues["paymentMethod"]> = {
+    deposito: "DEPOSIT",
+    deposit: "DEPOSIT",
+    transferencia: "DEPOSIT",
+    transfer: "DEPOSIT",
+    integralnoevento: "FULL_ON_EVENT",
+    pagamentonoevento: "FULL_ON_EVENT",
+    noevento: "FULL_ON_EVENT",
+    invoice: "INVOICE",
+    notafiscal: "INVOICE",
+    boleto: "INVOICE",
+    parcelado: "INSTALLMENTS",
+    parcelas: "INSTALLMENTS",
+    installments: "INSTALLMENTS",
+    pix: "PIX",
+    dinheiro: "CASH",
+    cash: "CASH",
+    outro: "OTHER",
+    other: "OTHER",
+  };
+
+  const enumValue = paymentMethodValues.find(
+    (method) => normalizeName(method) === normalizedValue,
+  );
+
+  return enumValue ?? aliases[normalizedValue] ?? "";
+}
+
 export default function EditEventPage() {
   const { user } = useAuth();
 
@@ -127,6 +166,8 @@ export default function EditEventPage() {
       status: "NEGOTIATING",
       hasContract: false,
       artistId: "",
+      clientMode: "new",
+      clientId: "",
       clientName: "",
       clientPhone: "",
       clientEmail: "",
@@ -172,10 +213,12 @@ export default function EditEventPage() {
           state: event.state ?? "",
           fee: event.fee?.toString() ?? "",
           paymentDate: event.paymentDate?.slice(0, 10) ?? "",
-          paymentMethod: event.paymentMethod ?? "",
+          paymentMethod: normalizePaymentMethod(event.paymentMethod),
           status: event.status ?? "NEGOTIATING",
           hasContract: event.hasContract ?? false,
           artistId: event.artist?.id ?? "",
+          clientMode: "new",
+          clientId: "",
           clientName: event.client?.name ?? "",
           clientPhone: event.client?.phone ?? "",
           clientEmail: event.client?.email ?? "",
@@ -263,7 +306,7 @@ export default function EditEventPage() {
       }
 
       if (hasValue(draft.paymentMethod)) {
-        setValue("paymentMethod", draft.paymentMethod, {
+        setValue("paymentMethod", normalizePaymentMethod(draft.paymentMethod), {
           shouldValidate: true,
         });
       }
@@ -355,7 +398,7 @@ export default function EditEventPage() {
         hasContract: values.hasContract,
         notes: values.notes ?? "",
         artistId: values.artistId,
-        clientName: values.clientName,
+        clientName: values.clientName ?? "",
         clientPhone: values.clientPhone ?? "",
         clientEmail: values.clientEmail ?? "",
         clientCompanyName: values.clientCompanyName ?? "",
@@ -506,11 +549,24 @@ export default function EditEventPage() {
             <div className="grid gap-5 sm:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Forma de pagamento</Label>
-                <Input
+
+                <select
                   id="paymentMethod"
-                  placeholder="Pix, boleto, transferência..."
-                  {...register("paymentMethod")}
-                />
+                  className="flex h-12 w-full rounded-md border border-input bg-muted/55 px-4 py-2 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+                  {...register("paymentMethod")}>
+                  <option value="">Selecione</option>
+                  {paymentMethodValues.map((method) => (
+                    <option key={method} value={method}>
+                      {paymentMethodLabels[method]}
+                    </option>
+                  ))}
+                </select>
+
+                {errors.paymentMethod ? (
+                  <p className="text-sm text-destructive">
+                    {errors.paymentMethod.message}
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fee">Valor do cachê</Label>

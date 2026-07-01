@@ -39,7 +39,7 @@ export interface EventDetails {
 
 export type Event = EventDetails;
 
-export interface CreateEventPayload {
+interface EventPayloadBase {
   title: string;
   eventDate: string;
   startTime?: string | null;
@@ -56,8 +56,24 @@ export interface CreateEventPayload {
   hasContract?: boolean;
   notes?: string | null;
   artistId: string;
+}
+
+type ExistingClientEventPayload = EventPayloadBase & {
+  clientId: string;
+  clientName?: never;
+  clientPhone?: never;
+  clientEmail?: never;
+  clientCompanyName?: never;
+};
+
+type NewClientEventPayload = EventPayloadBase & {
+  clientId?: never;
   clientName: string;
   clientPhone?: string | null;
   clientEmail?: string | null;
   clientCompanyName?: string | null;
-}
+};
+
+export type CreateEventPayload =
+  | ExistingClientEventPayload
+  | NewClientEventPayload;
