@@ -119,6 +119,7 @@ export default function RegisterPage() {
       stageName: "",
       email: "",
       password: "",
+      confirmPassword: "",
       phone: "",
     },
   });
@@ -182,7 +183,8 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await registerArtistService(values);
+      const { confirmPassword, ...payload } = values;
+      await registerArtistService(payload);
       router.push("/login");
     } catch (err) {
       setError(getRegisterErrorMessage(err));
@@ -336,20 +338,36 @@ export default function RegisterPage() {
                 </p>
               )}
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="artist-password">Senha</Label>
+                <Input
+                  id="artist-password"
+                  type="password"
+                  autoComplete="new-password"
+                  {...artistForm.register("password")}
+                />
+                {artistErrors.password && (
+                  <p className="text-sm text-destructive">
+                    {artistErrors.password.message}
+                  </p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="artist-password">Senha</Label>
-              <Input
-                id="artist-password"
-                type="password"
-                autoComplete="new-password"
-                {...artistForm.register("password")}
-              />
-              {artistErrors.password && (
-                <p className="text-sm text-destructive">
-                  {artistErrors.password.message}
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="artist-confirm-password">Confirmar senha</Label>
+                <Input
+                  id="artist-confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  {...artistForm.register("confirmPassword")}
+                />
+                {artistErrors.confirmPassword && (
+                  <p className="text-sm text-destructive">
+                    {artistErrors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
