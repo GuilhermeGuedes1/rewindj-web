@@ -38,7 +38,7 @@ export default function DashboardPage() {
   const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isArtist = user?.role === "ARTIST";
+  const isArtistDashboard = user?.role === "ARTIST" || Boolean(user?.artistId);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -47,7 +47,7 @@ export default function DashboardPage() {
       try {
         setIsLoading(true);
 
-        if (user.role === "ARTIST") {
+        if (isArtistDashboard) {
           const [profileData, eventData] = await Promise.all([
             getMyArtistProfileService(),
             listMyArtistEventsService(),
@@ -73,7 +73,7 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
-  }, [user]);
+  }, [isArtistDashboard, user]);
 
   const upcomingEvents = useMemo(
     () => events.filter(isFutureEvent).sort(sortByEventDate),
@@ -85,19 +85,26 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow={user?.organizationName ?? "RewindJ"}
+        eyebrow={
+          isArtistDashboard ? undefined : user?.organizationName ?? "RewindJ"
+        }
         title={
-          isArtist
-            ? `Olá, ${artistProfile?.stageName || artistProfile?.name || user?.name}`
+          isArtistDashboard
+            ? `Olá, ${
+                artistProfile?.stageName ||
+                artistProfile?.name ||
+                user?.name ||
+                "DJ"
+              }`
             : `Olá, ${user?.name}`
         }
         description={
-          isArtist
+          isArtistDashboard
             ? "Seus próximos shows, histórico e dados artísticos dentro da organização."
             : "Uma visão rápida da sua operação: agenda, artistas, convites e eventos criados com IA."
         }
         action={
-          isArtist ? null : (
+          isArtistDashboard ? null : (
             <Button asChild>
               <Link href="/events/create">Criar evento</Link>
             </Button>
@@ -107,18 +114,18 @@ export default function DashboardPage() {
 
       <section
         className={`mb-6 grid gap-3 ${
-          isArtist ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4"
+          isArtistDashboard ? "sm:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-3"
         }`}>
         <StatCard
           icon={Clock3}
-          label={isArtist ? "Próximo show" : "Próximo evento"}
+          label={isArtistDashboard ? "Próximo show" : "Próximo evento"}
           value={nextEvent ? formatEventDate(nextEvent.eventDate) : "--"}
           detail={nextEvent?.venueName ?? "Agenda livre"}
         />
 
         <StatCard
           icon={CalendarCheck}
-          label={isArtist ? "Eventos futuros" : "Eventos ativos"}
+          label={isArtistDashboard ? "Eventos futuros" : "Eventos ativos"}
           value={isLoading ? "--" : String(upcomingEvents.length)}
           detail={
             nextEvent
@@ -127,7 +134,7 @@ export default function DashboardPage() {
           }
         />
 
-        {!isArtist && (
+        {!isArtistDashboard && (
           <StatCard
             icon={Sparkles}
             label="Artistas"
@@ -138,11 +145,13 @@ export default function DashboardPage() {
       </section>
 
       <section
-        className={`grid gap-4 ${isArtist ? "xl:grid-cols-[1.2fr_0.8fr]" : ""}`}>
+        className={`grid gap-4 ${
+          isArtistDashboard ? "xl:grid-cols-[1.2fr_0.8fr]" : ""
+        }`}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold tracking-normal">
-              {isArtist ? "Próximo show" : "Próximo evento"}
+              {isArtistDashboard ? "Próximo show" : "Próximo evento"}
             </h2>
 
             <Button variant="ghost" asChild>
@@ -159,7 +168,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {isArtist && (
+        {isArtistDashboard && (
           <Card className="orbit-shell overflow-hidden">
             <CardContent className="p-6">
               <div className="mb-6 flex items-start justify-between gap-4">
