@@ -1,5 +1,7 @@
 import { api } from "@/libs/axios";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export type LoginData = {
   email: string;
   password: string;
@@ -35,6 +37,14 @@ export type LoginResponse = {
 export async function loginService(data: LoginData) {
   const response = await api.post<LoginResponse>("/auth/login", data);
   return response.data;
+}
+
+export function googleLoginService() {
+  if (!API_URL) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+  }
+
+  window.location.href = new URL("/auth/google", API_URL).toString();
 }
 
 export async function registerService(data: RegisterData) {
