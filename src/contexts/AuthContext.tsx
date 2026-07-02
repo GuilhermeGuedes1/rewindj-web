@@ -18,6 +18,7 @@ type AuthContextData = {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
+  loginWithToken: (accessToken: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 };
@@ -39,18 +40,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = !!user && !!token;
 
+  async function persistSession(accessToken: string) {
+    api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+
+    try {
+      const profile = await profileService();
+
+      localStorage.setItem(TOKEN_KEY, accessToken);
+      setToken(accessToken);
+      setUser(profile);
+    } catch (err) {
+      localStorage.removeItem(TOKEN_KEY);
+      delete api.defaults.headers.common.Authorization;
+
+      setToken(null);
+      setUser(null);
+
+      throw err;
+    }
+  }
+
   async function login(data: LoginData) {
     const { access_token } = await loginService(data);
 
-    localStorage.setItem(TOKEN_KEY, access_token);
-    api.defaults.headers.common.Authorization = `Bearer ${access_token}`;
-
-    setToken(access_token);
-
-    const profile = await profileService();
-    setUser(profile);
+    await persistSession(access_token);
 
     router.push("/dashboard");
+  }
+
+  async function loginWithToken(accessToken: string) {
+    await persistSession(accessToken);
+
+    router.replace("/dashboard");
   }
 
   async function register(data: RegisterData) {
@@ -109,6 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading,
         isAuthenticated,
         login,
+        loginWithToken,
         register,
         logout,
       }}>

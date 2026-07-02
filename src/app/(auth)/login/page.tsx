@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, LogIn } from "lucide-react";
+import { FaChrome } from "react-icons/fa";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -26,6 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { loginSchema, type LoginFormValues } from "@/schemas/auth.schema";
+import { googleLoginService } from "@/services/auth.service";
+
+const GOOGLE_ACCOUNT_NOT_FOUND_MESSAGE =
+  "Conta não encontrada. Crie sua conta primeiro usando email e senha.";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,12 +43,20 @@ export default function LoginPage() {
       password: "",
     },
   });
-  
+
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, isLoading, router]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("error") === "google_account_not_found") {
+      setError(GOOGLE_ACCOUNT_NOT_FOUND_MESSAGE);
+    }
+  }, []);
 
   if (isLoading || isAuthenticated) {
     return null;
@@ -61,6 +74,16 @@ export default function LoginPage() {
       }
 
       setError("Não foi possível realizar o login. Tente novamente.");
+    }
+  }
+
+  function handleGoogleLogin() {
+    setError(null);
+
+    try {
+      googleLoginService();
+    } catch {
+      setError("Não foi possível iniciar o login com Google. Tente novamente.");
     }
   }
 
@@ -127,6 +150,16 @@ export default function LoginPage() {
               )}
               Entrar
             </Button>
+            <div className="mb-5 space-y-5">
+              <Button
+                className="w-full"
+                size="lg"
+                type="button"
+                variant="outline"
+                onClick={handleGoogleLogin}>
+                <FaChrome /> Entrar com google
+              </Button>
+            </div>
 
             <p className="text-center text-sm text-muted-foreground">
               Ainda nao tem conta?{" "}
