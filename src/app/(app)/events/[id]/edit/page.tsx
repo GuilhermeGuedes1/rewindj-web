@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  eventSchema,
+  createEventSchema,
   paymentMethodLabels,
   paymentMethodValues,
   type EventFormValues,
@@ -30,6 +30,10 @@ import {
 import { aiService } from "@/services/ai.service";
 import { listArtistsService } from "@/services/artists.service";
 import type { Artist } from "@/types/artist";
+import {
+  canCreateEvent,
+  canManageArtists,
+} from "@/utils/auth-permissions";
 
 import {
   getEventByIdService,
@@ -127,6 +131,8 @@ function normalizePaymentMethod(
 
 export default function EditEventPage() {
   const { user } = useAuth();
+  const shouldSelectArtist = canManageArtists(user);
+  const canAccessPage = canCreateEvent(user);
 
   const router = useRouter();
   const params = useParams();
@@ -141,6 +147,9 @@ export default function EditEventPage() {
   const [suggestedArtistName, setSuggestedArtistName] = useState<string | null>(
     null,
   );
+  const validationSchema = createEventSchema({
+    requireArtist: shouldSelectArtist,
+  });
 
   const {
     register,
@@ -149,7 +158,7 @@ export default function EditEventPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues>({
-    resolver: zodResolver(eventSchema),
+    resolver: zodResolver(validationSchema),
     defaultValues: {
       title: "",
       eventDate: "",
@@ -177,8 +186,15 @@ export default function EditEventPage() {
   });
 
   useEffect(() => {
-    if (user?.role === "ARTIST") {
-      router.replace("/dashboard");
+    if (!user) return;
+
+    if (!canAccessPage) {
+      router.replace("/events");
+      return;
+    }
+
+    if (!shouldSelectArtist) {
+      setArtistsLoading(false);
       return;
     }
 
@@ -194,7 +210,7 @@ export default function EditEventPage() {
     }
 
     loadArtists();
-  }, [router, user?.role]);
+  }, [canAccessPage, router, shouldSelectArtist, user]);
 
   useEffect(() => {
     async function loadEvent() {
@@ -349,7 +365,7 @@ export default function EditEventPage() {
         setValue("notes", draft.notes, { shouldValidate: true });
       }
 
-      if (hasValue(draft.artistName)) {
+      if (shouldSelectArtist && hasValue(draft.artistName)) {
         const normalizedDraftArtist = normalizeName(draft.artistName);
 
         const matchedArtist = artists.find((artist) => {
@@ -393,11 +409,11 @@ export default function EditEventPage() {
         state: values.state,
         status: values.status,
         fee: values.fee ? Number(String(values.fee).replace(",", ".")) : null,
-        paymentDate: values.paymentDate,
+        paymentDate: values.paymentDate || null,
         paymentMethod: values.paymentMethod || null,
         hasContract: values.hasContract,
         notes: values.notes ?? "",
-        artistId: values.artistId,
+        ...(shouldSelectArtist ? { artistId: values.artistId } : {}),
         clientName: values.clientName ?? "",
         clientPhone: values.clientPhone ?? "",
         clientEmail: values.clientEmail ?? "",
@@ -682,40 +698,42 @@ export default function EditEventPage() {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="artistId">Artista</Label>
+              {shouldSelectArtist ? (
+                <div className="space-y-2">
+                  <Label htmlFor="artistId">Artista</Label>
 
-                <select
-                  id="artistId"
-                  className="flex h-12 w-full rounded-md border border-input bg-muted/55 px-4 py-2 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
-                  {...register("artistId")}
-                  disabled={artistsLoading}>
-                  <option value="">
-                    {artistsLoading
-                      ? "Carregando artistas..."
-                      : "Selecione um artista"}
-                  </option>
-
-                  {artists.map((artist) => (
-                    <option key={artist.id} value={artist.id}>
-                      {artist.stageName || artist.name}
+                  <select
+                    id="artistId"
+                    className="flex h-12 w-full rounded-md border border-input bg-muted/55 px-4 py-2 text-base text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:text-sm"
+                    {...register("artistId")}
+                    disabled={artistsLoading}>
+                    <option value="">
+                      {artistsLoading
+                        ? "Carregando artistas..."
+                        : "Selecione um artista"}
                     </option>
-                  ))}
-                </select>
 
-                {errors.artistId ? (
-                  <p className="text-sm text-destructive">
-                    {errors.artistId.message}
-                  </p>
-                ) : null}
+                    {artists.map((artist) => (
+                      <option key={artist.id} value={artist.id}>
+                        {artist.stageName || artist.name}
+                      </option>
+                    ))}
+                  </select>
 
-                {suggestedArtistName ? (
-                  <p className="text-sm text-muted-foreground">
-                    Artista sugerido pela IA: {suggestedArtistName}. Selecione o
-                    artista correto acima.
-                  </p>
-                ) : null}
-              </div>
+                  {errors.artistId ? (
+                    <p className="text-sm text-destructive">
+                      {errors.artistId.message}
+                    </p>
+                  ) : null}
+
+                  {suggestedArtistName ? (
+                    <p className="text-sm text-muted-foreground">
+                      Artista sugerido pela IA: {suggestedArtistName}. Selecione
+                      o artista correto acima.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="space-y-2">
                 <Label htmlFor="clientName">Cliente</Label>

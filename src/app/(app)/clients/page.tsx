@@ -1,22 +1,34 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { ClientCard } from "@/components/orbit/client-card";
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 import { getClientsService } from "@/services/clients.service";
 import type { Client } from "@/types/client";
+import { canManageClients } from "@/utils/auth-permissions";
 
 export default function ClientsPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
+    if (!user) return;
+
+    if (!canManageClients(user)) {
+      router.replace("/events");
+      return;
+    }
+
     async function loadClients() {
       try {
         setError(null);
@@ -31,7 +43,7 @@ export default function ClientsPage() {
     }
 
     loadClients();
-  }, []);
+  }, [router, user]);
 
   const filteredClients = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();

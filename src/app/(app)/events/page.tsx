@@ -9,23 +9,25 @@ import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { listMyArtistEventsService } from "@/services/artists.service";
 import { listEventsService } from "@/services/events.service";
 import type { Event } from "@/types/event";
+import {
+  canCreateEvent,
+  isAgencyArtist,
+  isIndependentArtist,
+} from "@/utils/auth-permissions";
 
 export default function EventsPage() {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const isArtist = user?.role === "ARTIST";
+  const hasArtistAgenda = isAgencyArtist(user) || isIndependentArtist(user);
 
   useEffect(() => {
     async function loadEvents() {
       try {
-        const data = isArtist
-          ? await listMyArtistEventsService()
-          : await listEventsService();
+        const data = await listEventsService();
         setEvents(data);
       } catch (error) {
         console.error("Erro ao buscar eventos:", error);
@@ -35,7 +37,7 @@ export default function EventsPage() {
     }
 
     loadEvents();
-  }, [isArtist]);
+  }, []);
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -65,21 +67,21 @@ export default function EventsPage() {
     <div>
       <PageHeader
         eyebrow="Agenda"
-        title={isArtist ? "Minha agenda" : "Eventos"}
+        title={hasArtistAgenda ? "Minha agenda" : "Eventos"}
         description={
-          isArtist
+          hasArtistAgenda
             ? "Seus próximos eventos e histórico em uma lista visual para acompanhar datas, locais e horários."
             : "Uma lista visual para acompanhar datas, locais, horários e contexto antes da noite começar."
         }
         action={
-          isArtist ? null : (
+          canCreateEvent(user) ? (
             <Button asChild>
               <Link href="/events/create">
                 <Plus className="size-4" />
                 Novo evento
               </Link>
             </Button>
-          )
+          ) : null
         }
       />
 

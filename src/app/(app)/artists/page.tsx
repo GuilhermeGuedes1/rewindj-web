@@ -16,6 +16,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { listArtistsService } from "@/services/artists.service";
 import { createInviteService } from "@/services/invites.service";
 import { Artist } from "@/types/artist";
+import {
+  canInviteArtists,
+  canManageArtists,
+} from "@/utils/auth-permissions";
 
 export default function ArtistsPage() {
   const router = useRouter();
@@ -29,11 +33,13 @@ export default function ArtistsPage() {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [isCreatingInvite, setIsCreatingInvite] = useState(false);
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
-  const canInviteArtist = user?.role === "CEO" || user?.role === "ADMIN";
+  const canInviteArtist = canInviteArtists(user);
 
   useEffect(() => {
-    if (user?.role === "ARTIST") {
-      router.replace("/dashboard");
+    if (!user) return;
+
+    if (!canManageArtists(user)) {
+      router.replace("/events");
       return;
     }
 
@@ -49,7 +55,7 @@ export default function ArtistsPage() {
     }
 
     loadArtists();
-  }, [router, user?.role]);
+  }, [router, user]);
 
   const filteredArtists = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();

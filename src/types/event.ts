@@ -55,7 +55,7 @@ interface EventPayloadBase {
   paymentMethod?: string | null;
   hasContract?: boolean;
   notes?: string | null;
-  artistId: string;
+  artistId?: string;
 }
 
 type ExistingClientEventPayload = EventPayloadBase & {

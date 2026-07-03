@@ -10,6 +10,11 @@ export type RegisterArtistPayload = {
   email: string;
   password: string;
   phone: string;
+  birthDate?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pixKey?: string | null;
 };
 
 export async function listArtistsService() {

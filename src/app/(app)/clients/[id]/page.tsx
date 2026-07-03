@@ -11,15 +11,17 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/orbit/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { getClientByIdService } from "@/services/clients.service";
 import type { ClientDetails, ClientEvent } from "@/types/client";
+import { canManageClients } from "@/utils/auth-permissions";
 
 function fallback(value?: string | null) {
   return value && value.trim() ? value : "Não informado";
@@ -89,12 +91,21 @@ function ClientEventCard({ event }: { event: ClientEvent }) {
 }
 
 export default function ClientDetailsPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
+
+    if (!canManageClients(user)) {
+      router.replace("/events");
+      return;
+    }
+
     async function loadClient() {
       if (!params.id) return;
 
@@ -113,7 +124,7 @@ export default function ClientDetailsPage() {
     }
 
     loadClient();
-  }, [params.id]);
+  }, [params.id, router, user]);
 
   return (
     <div>

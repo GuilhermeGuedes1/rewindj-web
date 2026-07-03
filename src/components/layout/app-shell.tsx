@@ -18,9 +18,16 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import type { AuthUser } from "@/services/auth.service";
 import { cn } from "@/utils/utils";
 import type { Artist } from "@/types/artist";
 import { getMyArtistProfileService } from "@/services/artists.service";
+import {
+  canCreateEvent,
+  isIndependentArtist,
+  canManageArtists,
+  canManageClients,
+} from "@/utils/auth-permissions";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -29,11 +36,6 @@ const navItems = [
   { href: "/clients", label: "Clientes", icon: UsersRound },
   { href: "/events/create", label: "Novo Evento", icon: Plus },
   { href: "/profile", label: "Meu Perfil", icon: UserCircle },
-];
-
-const artistNavItems = [
-  { href: "/dashboard", label: "Perfil", icon: LayoutDashboard },
-  { href: "/events", label: "Eventos", icon: CalendarDays },
 ];
 
 const adminMobileNavItems = [
@@ -47,6 +49,14 @@ const adminMobileMenuItems = [
   { href: "/clients", label: "Clientes", icon: UsersRound },
   { href: "/profile", label: "Meu Perfil", icon: UserCircle },
 ];
+
+function canShowNavItem(href: string, user: AuthUser | null) {
+  if (href === "/events/create") return canCreateEvent(user);
+  if (href === "/clients") return canManageClients(user);
+  if (href === "/artists") return canManageArtists(user);
+
+  return true;
+}
 
 function isNavItemActive(pathname: string, href: string) {
   if (href === "/artists" || href === "/clients") {
@@ -62,23 +72,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
-  const isArtist = user?.role === "ARTIST";
-  const isIndependentDJ = user?.role === "CEO" && Boolean(user?.artistId);
-  const shellDisplayName = isArtist
+  const hasArtistProfile = user?.role === "ARTIST" || isIndependentArtist(user);
+  const shellDisplayName = hasArtistProfile
     ? artistProfile?.stageName || artistProfile?.name || user?.name
     : user?.name;
-  const visibleNavItems =
-    user?.role === "ARTIST"
-      ? artistNavItems
-      : isIndependentDJ
-        ? navItems.filter((item) => item.href !== "/artists")
-        : navItems;
-  const mobileNavItems = isArtist ? artistNavItems : adminMobileNavItems;
-  const mobileMenuItems = isArtist
-    ? []
-    : isIndependentDJ
-      ? adminMobileMenuItems.filter((item) => item.href !== "/artists")
-      : adminMobileMenuItems;
+  const visibleNavItems = navItems.filter((item) =>
+    canShowNavItem(item.href, user),
+  );
+  const mobileNavItems = adminMobileNavItems.filter((item) =>
+    canShowNavItem(item.href, user),
+  );
+  const mobileMenuItems = adminMobileMenuItems.filter((item) =>
+    canShowNavItem(item.href, user),
+  );
   const mobileMenuActive = mobileMenuItems.some((item) =>
     isNavItemActive(pathname, item.href),
   );
@@ -95,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function loadArtistProfile() {
-      if (!user || user.role !== "ARTIST") {
+      if (!user || !hasArtistProfile) {
         setArtistProfile(null);
         return;
       }
@@ -109,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
 
     loadArtistProfile();
-  }, [user]);
+  }, [hasArtistProfile, user]);
 
   function handleLogout() {
     setMobileMenuOpen(false);

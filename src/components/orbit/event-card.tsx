@@ -34,6 +34,13 @@ export function EventCard({ event, featured = false }: EventCardProps) {
     day: "2-digit",
     month: "short",
   });
+  const formattedPaymentDate = event.paymentDate
+    ? formatEventDate(event.paymentDate, {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "não informado";
   const dateParts = formattedDate.split(" ");
 
   return (
@@ -86,6 +93,11 @@ export function EventCard({ event, featured = false }: EventCardProps) {
             <div className="flex items-center gap-2">
               <MapPin className="size-4 text-primary" />
               {event.city}, {event.state}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <CalendarDays className="size-4 text-primary" />
+              Data Pagamento: {formattedPaymentDate}
             </div>
 
             {event.notes ? (

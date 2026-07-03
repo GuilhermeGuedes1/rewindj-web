@@ -27,7 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  eventSchema,
+  createEventSchema,
   paymentMethodLabels,
   paymentMethodValues,
   type EventFormValues,
@@ -39,6 +39,11 @@ import { getClientsService } from "@/services/clients.service";
 import type { Artist } from "@/types/artist";
 import type { Client } from "@/types/client";
 import type { CreateEventPayload } from "@/types/event";
+import {
+  canCreateEvent,
+  canManageArtists,
+  isIndependentArtist,
+} from "@/utils/auth-permissions";
 import { cn } from "@/utils/utils";
 
 function normalizeDate(value?: string | null) {
@@ -393,6 +398,13 @@ function ClientSection({
 export default function NewEventPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const isIndependentArtistUser = isIndependentArtist(user);
+  const shouldSelectArtist = canManageArtists(user);
+  const canAccessPage = canCreateEvent(user);
+  const validationSchema = useMemo(
+    () => createEventSchema({ requireArtist: shouldSelectArtist }),
+    [shouldSelectArtist],
+  );
 
   const [artists, setArtists] = useState<Artist[]>([]);
   const [artistsLoading, setArtistsLoading] = useState(true);
@@ -420,7 +432,7 @@ export default function NewEventPage() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<EventFormValues>({
-    resolver: zodResolver(eventSchema),
+    resolver: zodResolver(validationSchema),
     defaultValues: {
       title: "",
       eventDate: "",
@@ -495,8 +507,15 @@ export default function NewEventPage() {
   }, [clientsLoaded, clientsLoading]);
 
   useEffect(() => {
-    if (user?.role === "ARTIST") {
-      router.replace("/dashboard");
+    if (!user) return;
+
+    if (!canAccessPage) {
+      router.replace("/events");
+      return;
+    }
+
+    if (!shouldSelectArtist) {
+      setArtistsLoading(false);
       return;
     }
 
@@ -512,7 +531,7 @@ export default function NewEventPage() {
     }
 
     loadArtists();
-  }, [router, user?.role]);
+  }, [canAccessPage, router, shouldSelectArtist, user]);
 
   useEffect(() => {
     if (clientMode !== "existing" || clientsLoaded || clientsLoading) return;
@@ -624,6 +643,10 @@ export default function NewEventPage() {
       });
       setValue("notes", draft.notes ?? "", { shouldValidate: true });
 
+      if (!shouldSelectArtist) {
+        return;
+      }
+
       const normalizedDraftArtist = normalizeName(draft.artistName);
 
       const matchedArtist = artists.find((artist) => {
@@ -666,11 +689,15 @@ export default function NewEventPage() {
         state: values.state,
         status: values.status,
         fee: values.fee ? Number(String(values.fee).replace(",", ".")) : null,
-        paymentDate: values.paymentDate,
+        paymentDate: values.paymentDate || null,
         paymentMethod: values.paymentMethod || null,
         hasContract: values.hasContract,
         notes: values.notes ?? "",
-        artistId: values.artistId,
+        ...(shouldSelectArtist
+          ? { artistId: values.artistId }
+          : isIndependentArtistUser && user?.artistId
+            ? { artistId: user.artistId }
+            : {}),
       };
 
       const payload: CreateEventPayload =
@@ -687,7 +714,6 @@ export default function NewEventPage() {
               clientCompanyName: values.clientCompanyName ?? "",
             };
 
-      console.log("PAYLOAD", payload);
       await createEventService(payload);
 
       router.push("/events");
@@ -986,7 +1012,7 @@ export default function NewEventPage() {
               />
             </div>
 
-            <div className="space-y-2">
+            {shouldSelectArtist ? (
               <div className="space-y-2">
                 <Label htmlFor="artistId">Artista</Label>
 
@@ -1021,7 +1047,7 @@ export default function NewEventPage() {
                   </p>
                 ) : null}
               </div>
-            </div>
+            ) : null}
 
             <ClientSection
               register={register}
