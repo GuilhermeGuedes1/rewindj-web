@@ -37,17 +37,17 @@ import { phoneMask } from "@/utils/phoneMask";
 import { cn } from "@/utils/utils";
 
 type RegisterStep = 1 | 2;
-type AccountType = "artist" | "agency";
+type RegisterAccountType = "independentArtist" | "agency";
 
 const accountTypeOptions: Array<{
-  value: AccountType;
+  value: RegisterAccountType;
   title: string;
   description: string;
   icon: typeof Headphones;
 }> = [
   {
-    value: "artist",
-    title: "DJ independente",
+    value: "independentArtist",
+    title: "Artista independente",
     description: "Cadastre seu acesso individual ao RewindJ.",
     icon: Headphones,
   },
@@ -94,7 +94,8 @@ function getRegisterErrorMessage(err: unknown) {
 export default function RegisterPage() {
   const router = useRouter();
   const { register: registerUser, isAuthenticated, isLoading } = useAuth();
-  const [accountType, setAccountType] = useState<AccountType>("agency");
+  const [accountType, setAccountType] =
+    useState<RegisterAccountType>("agency");
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<RegisterStep>(1);
 
@@ -139,7 +140,7 @@ export default function RegisterPage() {
     return null;
   }
 
-  function handleAccountTypeChange(type: AccountType) {
+  function handleAccountTypeChange(type: RegisterAccountType) {
     setAccountType(type);
     setError(null);
     setStep(1);
@@ -170,8 +171,15 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const { confirmPassword, ...payload } = values;
-      void confirmPassword;
+      const payload = {
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        password: values.password,
+        organizationName: values.organizationName,
+        organizationEmail: values.organizationEmail,
+        organizationDocument: values.organizationDocument,
+      };
 
       await registerUser(payload);
     } catch (err) {
@@ -183,7 +191,14 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const { confirmPassword, ...payload } = values;
+      const payload = {
+        name: values.name,
+        stageName: values.stageName,
+        email: values.email,
+        password: values.password,
+        phone: values.phone,
+      };
+
       await registerArtistService(payload);
       router.push("/login");
     } catch (err) {
@@ -221,7 +236,7 @@ export default function RegisterPage() {
 
         <div>
           <CardTitle>
-            {accountType === "artist"
+            {accountType === "independentArtist"
               ? "Criar conta"
               : step === 1
                 ? "Criar conta"
@@ -229,7 +244,7 @@ export default function RegisterPage() {
           </CardTitle>
 
           <CardDescription>
-            {accountType === "artist"
+            {accountType === "independentArtist"
               ? "Informe seus dados para acessar o RewindJ como DJ independente."
               : step === 1
                 ? "Informe seus dados para acessar o RewindJ."
@@ -270,7 +285,7 @@ export default function RegisterPage() {
           })}
         </div>
 
-        {accountType === "artist" ? (
+        {accountType === "independentArtist" ? (
           <form
             className="space-y-5"
             onSubmit={artistForm.handleSubmit(onArtistSubmit)}>

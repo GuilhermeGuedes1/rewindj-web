@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck, Clock3, Sparkles, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -16,10 +17,15 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   getMyArtistProfileService,
   listArtistsService,
-  listMyArtistEventsService,
 } from "@/services/artists.service";
 import { listEventsService } from "@/services/events.service";
 import { formatEventDate } from "@/utils/formatEventDate";
+import {
+  canCreateEvent,
+  canManageArtists,
+  isAgencyArtist,
+  isIndependentArtist,
+} from "@/utils/auth-permissions";
 
 function isFutureEvent(event: Event) {
   return new Date(event.eventDate).getTime() >= new Date().setHours(0, 0, 0, 0);
@@ -35,10 +41,24 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
-  const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isArtistDashboard = user?.role === "ARTIST" || Boolean(user?.artistId);
+  const isArtistFromAgency = isAgencyArtist(user);
+  const isIndependentArtistUser = isIndependentArtist(user);
+  const isArtistDashboard = isArtistFromAgency || isIndependentArtistUser;
+  const showArtistStats = canManageArtists(user);
+  const dashboardEyebrow =
+    isIndependentArtistUser ? undefined : user?.organizationName ?? "RewindJ";
+
+  const { data: artistProfile } = useQuery({
+    queryKey: ["artists", "me"],
+    queryFn: getMyArtistProfileService,
+    enabled: isArtistDashboard,
+  });
+
+  const dashboardName = isArtistDashboard
+    ? artistProfile?.stageName || artistProfile?.name || user?.name || "DJ"
+    : user?.name;
 
   useEffect(() => {
     async function loadDashboard() {
@@ -48,20 +68,14 @@ export default function DashboardPage() {
         setIsLoading(true);
 
         if (isArtistDashboard) {
-          const [profileData, eventData] = await Promise.all([
-            getMyArtistProfileService(),
-            listMyArtistEventsService(),
-          ]);
+          const eventData = await listEventsService();
 
-          setArtistProfile(profileData);
           setEvents(eventData);
           return;
         }
 
-        const [eventData, artistData] = await Promise.all([
-          listEventsService(),
-          listArtistsService(),
-        ]);
+        const eventData = await listEventsService();
+        const artistData = showArtistStats ? await listArtistsService() : [];
 
         setEvents(eventData);
         setArtists(artistData);
@@ -73,7 +87,7 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
-  }, [isArtistDashboard, user]);
+  }, [isArtistDashboard, showArtistStats, user]);
 
   const upcomingEvents = useMemo(
     () => events.filter(isFutureEvent).sort(sortByEventDate),
@@ -82,39 +96,30 @@ export default function DashboardPage() {
 
   const nextEvent = upcomingEvents[0];
 
+  console.log("DASHBOARD USER", user);
+
   return (
     <div>
       <PageHeader
-        eyebrow={
-          isArtistDashboard ? undefined : user?.organizationName ?? "RewindJ"
-        }
-        title={
-          isArtistDashboard
-            ? `Olá, ${
-                artistProfile?.stageName ||
-                artistProfile?.name ||
-                user?.name ||
-                "DJ"
-              }`
-            : `Olá, ${user?.name}`
-        }
+        eyebrow={dashboardEyebrow}
+        title={`Olá, ${dashboardName}`}
         description={
           isArtistDashboard
             ? "Seus próximos shows, histórico e dados artísticos dentro da organização."
             : "Uma visão rápida da sua operação: agenda, artistas, convites e eventos criados com IA."
         }
         action={
-          isArtistDashboard ? null : (
+          canCreateEvent(user) ? (
             <Button asChild>
               <Link href="/events/create">Criar evento</Link>
             </Button>
-          )
+          ) : null
         }
       />
 
       <section
         className={`mb-6 grid gap-3 ${
-          isArtistDashboard ? "sm:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-3"
+          showArtistStats ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2"
         }`}>
         <StatCard
           icon={Clock3}
@@ -134,7 +139,7 @@ export default function DashboardPage() {
           }
         />
 
-        {!isArtistDashboard && (
+        {showArtistStats && (
           <StatCard
             icon={Sparkles}
             label="Artistas"

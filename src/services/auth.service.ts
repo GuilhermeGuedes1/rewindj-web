@@ -1,4 +1,5 @@
 import { api } from "@/libs/axios";
+import type { AccountType, UserRole } from "@/types/user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -10,7 +11,11 @@ export type LoginData = {
 export type RegisterData = {
   name: string;
   email: string;
+  phone: string;
   password: string;
+  organizationName: string;
+  organizationEmail: string;
+  organizationDocument: string;
 };
 
 export type UpdateMeData = {
@@ -24,7 +29,8 @@ export type AuthUser = {
   email: string;
   name: string;
   phone?: string | null;
-  role: "CEO" | "ADMIN" | "PRODUCER" | "ARTIST";
+  role: UserRole;
+  accountType: AccountType;
   artistId?: string | null;
   organizationId: string | null;
   organizationName: string | null;

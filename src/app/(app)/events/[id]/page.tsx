@@ -17,8 +17,10 @@ import { PageHeader } from "@/components/orbit/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { getEventByIdService } from "@/services/events.service";
 import type { EventDetails } from "@/types/event";
+import { canCreateEvent } from "@/utils/auth-permissions";
 import { formatEventDate } from "@/utils/formatEventDate";
 
 function formatCurrency(value?: number | string | null) {
@@ -69,6 +71,7 @@ function eventStatusLabel(status?: string | null) {
 }
 
 export default function EventDetailsPage() {
+  const { user } = useAuth();
   const params = useParams<{ id: string }>();
   const [event, setEvent] = useState<EventDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,9 +113,11 @@ export default function EventDetailsPage() {
               </Link>
             </Button>
 
-            <Button asChild>
-              <Link href={`/events/${event?.id}/edit`}>Editar</Link>
-            </Button>
+            {canCreateEvent(user) ? (
+              <Button asChild>
+                <Link href={`/events/${event?.id}/edit`}>Editar</Link>
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -166,6 +171,11 @@ export default function EventDetailsPage() {
                 <div className="flex items-center gap-2">
                   <FileText className="size-4 text-primary" />
                   Cachê: {formatCurrency(event.fee)}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 text-primary" />
+                  Data pagamento : {fallback(event.paymentDate)}
                 </div>
 
                 <div className="flex items-center gap-2">

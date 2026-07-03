@@ -12,15 +12,17 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/orbit/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { getArtistByIdService } from "@/services/artists.service";
 import type { Artist } from "@/types/artist";
+import { canManageArtists } from "@/utils/auth-permissions";
 import { formatEventDate } from "@/utils/formatEventDate";
 
 function fallback(value?: string | null) {
@@ -36,6 +38,8 @@ function getArtistDisplayName(artist: Artist) {
 }
 
 export default function ArtistDetailsPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const params = useParams<{ id: string }>();
 
   const [artist, setArtist] = useState<Artist | null>(null);
@@ -43,6 +47,13 @@ export default function ArtistDetailsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
+
+    if (!canManageArtists(user)) {
+      router.replace("/events");
+      return;
+    }
+
     async function loadArtist() {
       if (!params.id) return;
 
@@ -61,7 +72,7 @@ export default function ArtistDetailsPage() {
     }
 
     loadArtist();
-  }, [params.id]);
+  }, [params.id, router, user]);
 
   return (
     <div>

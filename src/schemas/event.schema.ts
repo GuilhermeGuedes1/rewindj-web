@@ -23,7 +23,51 @@ export const paymentMethodLabels: Record<
   OTHER: "Outro",
 };
 
-export const eventSchema = z.object({
+export function createEventSchema({
+  requireArtist,
+}: {
+  requireArtist: boolean;
+}) {
+  return eventSchemaBase.superRefine((values, context) => {
+    if (requireArtist && !values.artistId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Selecione um artista.",
+        path: ["artistId"],
+      });
+    }
+
+    if (values.clientMode === "existing") {
+      if (!values.clientId) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Selecione um cliente.",
+          path: ["clientId"],
+        });
+      }
+
+      return;
+    }
+
+    if (!values.clientName || values.clientName.trim().length < 2) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe o cliente.",
+        path: ["clientName"],
+      });
+    }
+
+    if (!values.clientPhone || values.clientPhone.trim().length < 1) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe o telefone do cliente.",
+        path: ["clientPhone"],
+      });
+    }
+  });
+}
+
+const eventSchemaBase = z.object({
   title: z.string().min(2, "Informe o nome do evento."),
   eventDate: z.string().min(1, "Informe a data do evento."),
   startTime: z.string().optional(),
@@ -38,7 +82,7 @@ export const eventSchema = z.object({
   paymentMethod: z.enum(paymentMethodValues).optional().or(z.literal("")),
   status: z.enum(["NEGOTIATING", "CONFIRMED", "LOST"]),
   hasContract: z.boolean(),
-  artistId: z.string().min(1, "Selecione um artista."),
+  artistId: z.string().optional(),
   clientMode: z.enum(["existing", "new"]),
   clientId: z.string().optional(),
   clientName: z.string().optional(),
@@ -50,34 +94,7 @@ export const eventSchema = z.object({
     .or(z.literal("")),
   clientCompanyName: z.string().optional(),
   notes: z.string().optional(),
-}).superRefine((values, context) => {
-  if (values.clientMode === "existing") {
-    if (!values.clientId) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Selecione um cliente.",
-        path: ["clientId"],
-      });
-    }
-
-    return;
-  }
-
-  if (!values.clientName || values.clientName.trim().length < 2) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Informe o cliente.",
-      path: ["clientName"],
-    });
-  }
-
-  if (!values.clientPhone || values.clientPhone.trim().length < 1) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Informe o telefone do cliente.",
-      path: ["clientPhone"],
-    });
-  }
 });
 
+export const eventSchema = createEventSchema({ requireArtist: true });
 export type EventFormValues = z.infer<typeof eventSchema>;
