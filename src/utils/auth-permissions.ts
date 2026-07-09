@@ -49,6 +49,10 @@ export function canManageClients(user: PermissionUser) {
   return isAgencyManager(user) || isIndependentArtist(user);
 }
 
+export function canViewFinancial(user: PermissionUser) {
+  return Boolean(user);
+}
+
 export function canManageArtists(user: PermissionUser) {
   return Boolean(
     user &&

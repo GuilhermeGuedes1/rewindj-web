@@ -47,8 +47,9 @@ export default function DashboardPage() {
   const isIndependentArtistUser = isIndependentArtist(user);
   const isArtistDashboard = isArtistFromAgency || isIndependentArtistUser;
   const showArtistStats = canManageArtists(user);
-  const dashboardEyebrow =
-    isIndependentArtistUser ? undefined : user?.organizationName ?? "RewindJ";
+  const dashboardEyebrow = isIndependentArtistUser
+    ? undefined
+    : (user?.organizationName ?? "RewindJ");
 
   const { data: artistProfile } = useQuery({
     queryKey: ["artists", "me"],
@@ -95,8 +96,6 @@ export default function DashboardPage() {
   );
 
   const nextEvent = upcomingEvents[0];
-
-  console.log("DASHBOARD USER", user);
 
   return (
     <div>
