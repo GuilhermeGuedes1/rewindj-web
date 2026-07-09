@@ -2,7 +2,7 @@
 
 Frontend application for Rewindj.
 
-Rewindj is an AI-powered operating system for DJs, artists and agencies, focused on managing events, artists, clients and commercial operations.
+Rewindj is an AI-powered operating system for DJs, independent artists and agencies, helping manage events, artists, clients and financial operations in a single platform.
 
 🌐 Live Application
 
@@ -12,11 +12,9 @@ https://app.rewindj.me
 
 ## Overview
 
-This frontend was built with a strong focus on product validation and rapid iteration.
+Rewindj Web is the frontend for the Rewindj platform, providing an intuitive interface for managing the daily workflow of artists and event agencies.
 
-The main goal of the current version is to provide a functional interface for real-world testing while the backend and business rules continue to evolve.
-
-Several areas of the frontend are intentionally being improved incrementally as the platform matures.
+The application consumes a NestJS API and supports multiple account types with different experiences depending on the authenticated user.
 
 ---
 
@@ -24,111 +22,111 @@ Several areas of the frontend are intentionally being improved incrementally as 
 
 ### Authentication
 
-- Login
-- Registration
+- Email & Password Authentication
+- Google OAuth
 - JWT Authentication
 - Protected Routes
 
 ### Dashboard
 
-- Organization Overview
-- Event Summary
-- Artist-Specific Experience
+- Organization Dashboard
+- Independent Artist Dashboard
+- Agency Artist Dashboard
+- Personalized experience based on account type
 
 ### Events
 
 - Event Listing
-- Event Creation
-- AI-Powered Event Draft Generation
-- Event Editing
 - Event Details
+- Event Creation
+- Event Editing
+- AI-Powered Event Draft Generation
+- Automatic client creation
+- Role-based event permissions
 
 ### Artists
 
 - Artist Listing
 - Artist Profiles
 - Artist Details
+- Independent Artist Registration
+- Invite-based Agency Artist onboarding
 
 ### Clients
 
 - Client Listing
 - Client Details
+- Role-based client management
 
-### Multi-Tenant Experience
+### Financial
 
-- Organization Isolation
-- Role-Based Navigation
-- Artist-Specific Views
+- Monthly Financial Dashboard
+- Revenue Summary
+- Average Event Fee
+- Monthly Event Statistics
+- Month & Year filters
+- Artist filter for agency administrators
+
+### Multi-Tenant
+
+- Organization isolation
+- Role-based navigation
+- Agency accounts
+- Independent artist accounts
+- Context-aware UI
 
 ---
 
 ## Tech Stack
 
 - Next.js 15
+- React 19
 - TypeScript
 - TailwindCSS
 - shadcn/ui
+- TanStack Query
 - Axios
 - React Hook Form
 - Zod
+- Lucide Icons
 
 ---
 
-## Current Development Priorities
+## Current Architecture
 
-### Code Quality
-
-- Utility function organization
-- Shared helpers
-- Better folder structure
-- Component extraction
-- Improved typing
-
-### Data Layer
-
-- TanStack Query integration
-- Better caching strategies
-- Request invalidation
-- Optimistic updates
-
-### Forms
-
-- Improved validation
-- Better error handling
-- Form abstractions
-
-### UX Improvements
-
-- Loading states
-- Empty states
-- Better feedback messages
-- Improved mobile experience
-
-### Design System
-
-- Component standardization
-- Reusable UI patterns
-- Consistent spacing and typography
+- Feature-based folder structure
+- Typed API services
+- React Query data layer
+- Protected routing
+- Reusable UI components
+- Role-based rendering
+- Account type awareness
 
 ---
 
-## Development Philosophy
+## Development Priorities
 
-The current frontend prioritizes:
+### Product
 
-1. Product validation
-2. Fast iteration
-3. Real-world testing
-4. Business feedback
+- Financial reports
+- Payment management
+- Event contracts
+- Calendar improvements
 
-Technical refinements are being introduced progressively as the product evolves.
+### Engineering
+
+- Automated tests
+- Better caching
+- Performance improvements
+- Component refinement
+- Accessibility improvements
 
 ---
 
 ## Current Status
 
-Private Beta
+Beta
 
-This application is actively being used and tested in a real event operation environment.
+The platform is currently being used in production by real users to manage artists, events and agencies.
 
-The frontend continues to evolve alongside the backend and business requirements.
+Both frontend and backend continue evolving through continuous product validation and user feedback.
