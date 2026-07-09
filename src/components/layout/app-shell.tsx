@@ -2,6 +2,7 @@
 
 import {
   CalendarDays,
+  CircleDollarSign,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -27,11 +28,13 @@ import {
   isIndependentArtist,
   canManageArtists,
   canManageClients,
+  canViewFinancial,
 } from "@/utils/auth-permissions";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/events", label: "Eventos", icon: CalendarDays },
+  { href: "/financial", label: "Financeiro", icon: CircleDollarSign },
   { href: "/artists", label: "Artistas", icon: Mic2 },
   { href: "/clients", label: "Clientes", icon: UsersRound },
   { href: "/events/create", label: "Novo Evento", icon: Plus },
@@ -45,6 +48,7 @@ const adminMobileNavItems = [
 ];
 
 const adminMobileMenuItems = [
+  { href: "/financial", label: "Financeiro", icon: CircleDollarSign },
   { href: "/artists", label: "Artistas", icon: Mic2 },
   { href: "/clients", label: "Clientes", icon: UsersRound },
   { href: "/profile", label: "Meu Perfil", icon: UserCircle },
@@ -52,6 +56,7 @@ const adminMobileMenuItems = [
 
 function canShowNavItem(href: string, user: AuthUser | null) {
   if (href === "/events/create") return canCreateEvent(user);
+  if (href === "/financial") return canViewFinancial(user);
   if (href === "/clients") return canManageClients(user);
   if (href === "/artists") return canManageArtists(user);
 
@@ -59,7 +64,7 @@ function canShowNavItem(href: string, user: AuthUser | null) {
 }
 
 function isNavItemActive(pathname: string, href: string) {
-  if (href === "/artists" || href === "/clients") {
+  if (href === "/artists" || href === "/clients" || href === "/financial") {
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
