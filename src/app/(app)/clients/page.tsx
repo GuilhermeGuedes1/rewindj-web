@@ -53,12 +53,7 @@ export default function ClientsPage() {
     }
 
     return clients.filter((client) =>
-      [
-        client.name,
-        client.companyName ?? "",
-        client.phone,
-        client.email ?? "",
-      ]
+      [client.name, client.companyName ?? "", client.phone, client.email ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
@@ -68,7 +63,6 @@ export default function ClientsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Clientes"
         title="Clientes"
         description="Gerencie os clientes da sua agência e acompanhe seus contatos."
         action={

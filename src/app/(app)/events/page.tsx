@@ -66,7 +66,7 @@ export default function EventsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Agenda"
+        
         title={hasArtistAgenda ? "Minha agenda" : "Eventos"}
         description={
           hasArtistAgenda

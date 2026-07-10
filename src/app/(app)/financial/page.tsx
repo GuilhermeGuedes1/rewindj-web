@@ -251,7 +251,6 @@ export default function FinancialPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Financeiro"
         title="Financeiro"
         description="Valores dos eventos disponíveis para o seu acesso."
       />
@@ -352,11 +351,7 @@ export default function FinancialPage() {
                 ? "--"
                 : String(displaySummary.totalEvents)
             }
-            detail={
-              hasDateFilter
-                ? "Eventos considerados no período"
-                : "Eventos com cachê no total"
-            }
+            detail={"no período selecionado"}
           />
 
           <StatCard
@@ -367,7 +362,7 @@ export default function FinancialPage() {
                 ? "--"
                 : formatCurrency(displaySummary.totalRevenue)
             }
-            detail={hasDateFilter ? "Total recebido no período" : "Total geral"}
+            detail={"no período selecionado"}
           />
 
           <StatCard
@@ -378,7 +373,7 @@ export default function FinancialPage() {
                 ? "--"
                 : formatCurrency(displaySummary.averageFee)
             }
-            detail="Média por evento com cachê"
+            detail="No período selecionado"
           />
         </section>
       )}
@@ -525,7 +520,6 @@ export default function FinancialPage() {
                           <td className="px-5 py-4 text-right font-semibold">
                             {formatCurrency(getEventFee(event))}
                           </td>
-
                         </tr>
                       );
                     })}

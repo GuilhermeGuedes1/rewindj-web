@@ -16,10 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { listArtistsService } from "@/services/artists.service";
 import { createInviteService } from "@/services/invites.service";
 import { Artist } from "@/types/artist";
-import {
-  canInviteArtists,
-  canManageArtists,
-} from "@/utils/auth-permissions";
+import { canInviteArtists, canManageArtists } from "@/utils/auth-permissions";
 
 export default function ArtistsPage() {
   const router = useRouter();
@@ -161,7 +158,6 @@ export default function ArtistsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Roster"
         title="Artistas"
         description="Acompanhe o elenco da agência com contatos, status e identidade visual de app musical."
       />
@@ -175,7 +171,7 @@ export default function ArtistsPage() {
                   Convidar artista
                 </h2>
                 <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Gere um link de acesso e envie manualmente pelo WhatsApp.
+                  Gere um link de acesso e compartilhe.
                 </p>
               </div>
             </div>
