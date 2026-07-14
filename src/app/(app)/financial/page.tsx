@@ -5,7 +5,6 @@ import {
   Banknote,
   CalendarDays,
   CircleDollarSign,
-  ReceiptText,
   Search,
   WalletCards,
 } from "lucide-react";
@@ -14,11 +13,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/orbit/page-header";
 import { StatCard } from "@/components/orbit/stat-card";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useEvents } from "@/hooks/use-events";
 import { useAuth } from "@/hooks/useAuth";
 import { listArtistsService } from "@/services/artists.service";
-import { listEventsService } from "@/services/events.service";
 import { getFinancialSummaryService } from "@/services/financial.service";
 import type { Artist } from "@/types/artist";
 import type { Event } from "@/types/event";
@@ -94,15 +94,19 @@ export default function FinancialPage() {
   const [appliedMonth, setAppliedMonth] = useState<number | undefined>();
   const [appliedYear, setAppliedYear] = useState<number | undefined>();
   const [artistId, setArtistId] = useState("");
-  const [events, setEvents] = useState<Event[]>([]);
+  const [page, setPage] = useState(1);
   const [artists, setArtists] = useState<Artist[]>([]);
-  const [isEventsLoading, setIsEventsLoading] = useState(true);
-  const [eventsError, setEventsError] = useState(false);
   const [query, setQuery] = useState("");
   const canAccessFinancial = canViewFinancial(user);
   const canFilterByArtist = canManageArtists(user);
   const hasDateFilter = appliedMonth !== undefined && appliedYear !== undefined;
   const appliedArtistId = canFilterByArtist ? artistId || undefined : undefined;
+  const {
+    data: eventsResponse,
+    isLoading: isEventsLoading,
+    isError: eventsError,
+    error: eventsQueryError,
+  } = useEvents(page, !isAuthLoading && canAccessFinancial);
   const summaryParams =
     hasDateFilter || appliedArtistId
       ? {
@@ -126,37 +130,20 @@ export default function FinancialPage() {
   function handleApplyDateFilter() {
     setAppliedMonth(month);
     setAppliedYear(year);
+    setPage(1);
   }
 
   function handleShowAllEvents() {
     setAppliedMonth(undefined);
     setAppliedYear(undefined);
+    setPage(1);
   }
 
   useEffect(() => {
-    async function loadFinancialEvents() {
-      if (!canAccessFinancial) {
-        setIsEventsLoading(false);
-        return;
-      }
-
-      try {
-        setIsEventsLoading(true);
-        setEventsError(false);
-        const data = await listEventsService();
-        setEvents(data);
-      } catch (error) {
-        console.error("Erro ao buscar dados financeiros:", error);
-        setEventsError(true);
-      } finally {
-        setIsEventsLoading(false);
-      }
+    if (eventsQueryError) {
+      console.error("Erro ao buscar dados financeiros:", eventsQueryError);
     }
-
-    if (!isAuthLoading) {
-      loadFinancialEvents();
-    }
-  }, [canAccessFinancial, isAuthLoading]);
+  }, [eventsQueryError]);
 
   useEffect(() => {
     async function loadArtists() {
@@ -180,7 +167,7 @@ export default function FinancialPage() {
 
   const financialEvents = useMemo(
     () =>
-      events
+      (eventsResponse?.data ?? [])
         .filter((event) => getEventFee(event) > 0)
         .filter((event) =>
           appliedArtistId ? event.artist?.id === appliedArtistId : true,
@@ -191,7 +178,13 @@ export default function FinancialPage() {
             : true,
         )
         .sort(sortFinancialEvents),
-    [appliedArtistId, appliedMonth, appliedYear, events, hasDateFilter],
+    [
+      appliedArtistId,
+      appliedMonth,
+      appliedYear,
+      eventsResponse,
+      hasDateFilter,
+    ],
   );
 
   const localSummary = useMemo(() => {
@@ -264,7 +257,10 @@ export default function FinancialPage() {
               </span>
               <select
                 value={artistId}
-                onChange={(event) => setArtistId(event.target.value)}
+                onChange={(event) => {
+                  setArtistId(event.target.value);
+                  setPage(1);
+                }}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring">
                 <option value="">Todos os artistas</option>
                 {artists.map((artist) => (
@@ -282,7 +278,10 @@ export default function FinancialPage() {
             </span>
             <select
               value={month}
-              onChange={(event) => setMonth(Number(event.target.value))}
+              onChange={(event) => {
+                setMonth(Number(event.target.value));
+                setPage(1);
+              }}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring">
               {months.map((item) => (
                 <option key={item.value} value={item.value}>
@@ -301,7 +300,10 @@ export default function FinancialPage() {
               min={2000}
               max={2100}
               value={year}
-              onChange={(event) => setYear(Number(event.target.value))}
+              onChange={(event) => {
+                setYear(Number(event.target.value));
+                setPage(1);
+              }}
               className="h-10"
             />
           </label>
@@ -384,7 +386,10 @@ export default function FinancialPage() {
 
           <Input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPage(1);
+            }}
             placeholder="Buscar por evento, local, cliente, artista ou método"
             className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
           />
@@ -530,6 +535,28 @@ export default function FinancialPage() {
           )}
         </CardContent>
       </Card>
+
+      {!isEventsLoading && eventsResponse ? (
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setPage((page) => page - 1)}
+            disabled={page === 1}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Página {page} de {eventsResponse.meta.pageTotal}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage((page) => page + 1)}
+            disabled={page === eventsResponse.meta.pageTotal}
+          >
+            Próxima
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

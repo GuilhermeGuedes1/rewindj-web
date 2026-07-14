@@ -7,6 +7,19 @@ export interface Client {
   createdAt: string;
 }
 
+export interface ClientsResponseMeta {
+  page: number;
+  limit: number;
+  total?: number;
+  count?: number;
+  pageTotal: number;
+}
+
+export interface ClientsResponse {
+  meta: ClientsResponseMeta;
+  data: Client[];
+}
+
 export interface ClientEvent {
   id: string;
   title: string;

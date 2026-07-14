@@ -8,9 +8,8 @@ import { EventCard } from "@/components/orbit/event-card";
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useEvents } from "@/hooks/use-events";
 import { useAuth } from "@/hooks/useAuth";
-import { listEventsService } from "@/services/events.service";
-import type { Event } from "@/types/event";
 import {
   canCreateEvent,
   isAgencyArtist,
@@ -19,27 +18,19 @@ import {
 
 export default function EventsPage() {
   const { user } = useAuth();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const hasArtistAgenda = isAgencyArtist(user) || isIndependentArtist(user);
+  const { data: response, isLoading, error } = useEvents(page);
 
   useEffect(() => {
-    async function loadEvents() {
-      try {
-        const data = await listEventsService();
-        setEvents(data);
-      } catch (error) {
-        console.error("Erro ao buscar eventos:", error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (error) {
+      console.error("Erro ao buscar eventos:", error);
     }
-
-    loadEvents();
-  }, []);
+  }, [error]);
 
   const filteredEvents = useMemo(() => {
+    const events = response?.data ?? [];
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
@@ -61,12 +52,11 @@ export default function EventsPage() {
         .toLowerCase()
         .includes(normalizedQuery),
     );
-  }, [events, query]);
+  }, [query, response]);
 
   return (
     <div>
       <PageHeader
-        
         title={hasArtistAgenda ? "Minha agenda" : "Eventos"}
         description={
           hasArtistAgenda
@@ -90,7 +80,10 @@ export default function EventsPage() {
 
         <Input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+          }}
           placeholder="Buscar por evento, local, cliente ou artista"
           className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
         />
@@ -111,6 +104,28 @@ export default function EventsPage() {
           ))}
         </section>
       )}
+
+      {!isLoading && response ? (
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setPage((page) => page - 1)}
+            disabled={page === 1}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Página {page} de {response.meta.pageTotal}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage((page) => page + 1)}
+            disabled={page === response.meta.pageTotal}
+          >
+            Próxima
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

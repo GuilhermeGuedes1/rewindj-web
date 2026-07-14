@@ -8,18 +8,22 @@ import { ClientCard } from "@/components/orbit/client-card";
 import { PageHeader } from "@/components/orbit/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useClients } from "@/hooks/use-clients";
 import { useAuth } from "@/hooks/useAuth";
-import { getClientsService } from "@/services/clients.service";
-import type { Client } from "@/types/client";
 import { canManageClients } from "@/utils/auth-permissions";
 
 export default function ClientsPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
+  const canAccessClients = canManageClients(user);
+  const {
+    data: response,
+    isLoading: isClientsLoading,
+    error,
+  } = useClients(page, !isAuthLoading && canAccessClients);
+  const isLoading = isAuthLoading || !canAccessClients || isClientsLoading;
 
   useEffect(() => {
     if (!user) return;
@@ -28,24 +32,16 @@ export default function ClientsPage() {
       router.replace("/events");
       return;
     }
-
-    async function loadClients() {
-      try {
-        setError(null);
-        const data = await getClientsService();
-        setClients(data);
-      } catch (error) {
-        console.error("Erro ao buscar clientes:", error);
-        setError("Não foi possível carregar os clientes agora.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadClients();
   }, [router, user]);
 
+  useEffect(() => {
+    if (error) {
+      console.error("Erro ao buscar clientes:", error);
+    }
+  }, [error]);
+
   const filteredClients = useMemo(() => {
+    const clients = response?.data ?? [];
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
@@ -58,7 +54,7 @@ export default function ClientsPage() {
         .toLowerCase()
         .includes(normalizedQuery),
     );
-  }, [clients, query]);
+  }, [query, response]);
 
   return (
     <div>
@@ -78,7 +74,10 @@ export default function ClientsPage() {
 
         <Input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+          }}
           placeholder="Buscar por cliente, empresa, telefone ou email"
           className="h-9 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
         />
@@ -90,7 +89,7 @@ export default function ClientsPage() {
         </div>
       ) : error ? (
         <div className="orbit-shell rounded-lg p-6 text-muted-foreground">
-          {error}
+          Não foi possível carregar os clientes agora.
         </div>
       ) : filteredClients.length === 0 ? (
         <div className="orbit-shell rounded-lg p-6 text-muted-foreground">
@@ -103,6 +102,28 @@ export default function ClientsPage() {
           ))}
         </section>
       )}
+
+      {!isLoading && response ? (
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setPage((page) => page - 1)}
+            disabled={page === 1}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Página {page} de {response.meta.pageTotal}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setPage((page) => page + 1)}
+            disabled={page === response.meta.pageTotal}
+          >
+            Próxima
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

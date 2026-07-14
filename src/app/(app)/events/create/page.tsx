@@ -496,8 +496,8 @@ export default function NewEventPage() {
 
     try {
       setClientsLoading(true);
-      const data = await getClientsService();
-      setClients(data);
+      const response = await getClientsService();
+      setClients(response.data);
     } catch (error) {
       console.error("Erro ao buscar clientes:", error);
     } finally {

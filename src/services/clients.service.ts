@@ -1,8 +1,8 @@
 import { api } from "@/libs/axios";
-import type { Client, ClientDetails } from "@/types/client";
+import type { ClientDetails, ClientsResponse } from "@/types/client";
 
-export async function getClientsService() {
-  const response = await api.get<Client[]>("/clients");
+export async function getClientsService(page = 1) {
+  const response = await api.get<ClientsResponse>(`/clients?page=${page}`);
   return response.data;
 }
 
