@@ -39,6 +39,19 @@ export interface EventDetails {
 
 export type Event = EventDetails;
 
+export interface EventsResponseMeta {
+  page: number;
+  limit: number;
+  total?: number;
+  count?: number;
+  pageTotal: number;
+}
+
+export interface EventsResponse {
+  meta: EventsResponseMeta;
+  data: Event[];
+}
+
 interface EventPayloadBase {
   title: string;
   eventDate: string;

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/types/event";
 import { formatEventDate } from "@/utils/formatEventDate";
+import { cn } from "@/utils/utils";
 
 interface EventCardProps {
   event: Event;
@@ -47,8 +48,15 @@ export function EventCard({ event, featured = false }: EventCardProps) {
     <Link
       href={`/events/${event.id}`}
       aria-label={`Ver detalhes de ${event.title}`}
-      className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-      <Card className="orbit-shell overflow-hidden transition-colors hover:border-primary/40">
+      className={cn(
+        "block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        !featured && "h-full",
+      )}>
+      <Card
+        className={cn(
+          "orbit-shell overflow-hidden transition-colors hover:border-primary/40",
+          !featured && "h-[22rem]",
+        )}>
         <CardContent className={featured ? "p-5 sm:p-6" : "p-5"}>
           <div className="mb-5 flex items-start justify-between gap-4">
             <div className="flex gap-4">

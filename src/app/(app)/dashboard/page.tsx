@@ -71,14 +71,14 @@ export default function DashboardPage() {
         if (isArtistDashboard) {
           const eventData = await listEventsService();
 
-          setEvents(eventData);
+          setEvents(eventData.data);
           return;
         }
 
         const eventData = await listEventsService();
         const artistData = showArtistStats ? await listArtistsService() : [];
 
-        setEvents(eventData);
+        setEvents(eventData.data);
         setArtists(artistData);
       } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
