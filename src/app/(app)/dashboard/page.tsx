@@ -106,7 +106,15 @@ export default function DashboardPage() {
         <StatCard
           icon={Clock3}
           label={isArtistDashboard ? "Próximo show" : "Próximo evento"}
-          value={nextEvent ? formatEventDate(nextEvent.eventDate) : "--"}
+          value={
+            isLoading
+              ? "--"
+              : nextEvent
+                ? formatEventDate(nextEvent.eventDate)
+                : isArtistDashboard
+                  ? "Não há próximo show"
+                  : "Não há próximo evento"
+          }
           detail={nextEvent?.venueName ?? "Agenda livre"}
         />
 
@@ -144,7 +152,9 @@ export default function DashboardPage() {
             <EventCard event={nextEvent} featured />
           ) : (
             <div className="orbit-shell rounded-lg p-6 text-muted-foreground">
-              Nenhum evento futuro encontrado.
+              {isArtistDashboard
+                ? "Não há próximo show agendado."
+                : "Não há próximo evento agendado."}
             </div>
           )}
         </div>
