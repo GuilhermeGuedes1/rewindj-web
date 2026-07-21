@@ -22,14 +22,34 @@ import {
   isIndependentArtist,
 } from "@/utils/auth-permissions";
 
-function isFutureEvent(event: Event) {
-  return new Date(event.eventDate).getTime() >= new Date().setHours(0, 0, 0, 0);
+function isFutureEvent(event: Event, currentTime: number) {
+  const [year, month, day] = event.eventDate
+    .slice(0, 10)
+    .split("-")
+    .map(Number);
+  const [startHour, startMinute] = (event.startTime ?? "00:00")
+    .split(":")
+    .map(Number);
+  const [endHour, endMinute] = (event.endTime ?? "23:59")
+    .split(":")
+    .map(Number);
+  const eventEnd = new Date(year, month - 1, day, endHour, endMinute);
+
+  if (
+    endHour < startHour ||
+    (endHour === startHour && endMinute < startMinute)
+  ) {
+    eventEnd.setDate(eventEnd.getDate() + 1);
+  }
+
+  return eventEnd.getTime() >= currentTime;
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   const isArtistFromAgency = isAgencyArtist(user);
   const isIndependentArtistUser = isIndependentArtist(user);
@@ -68,9 +88,18 @@ export default function DashboardPage() {
     loadDashboard();
   }, [user]);
 
+  useEffect(() => {
+    const interval = window.setInterval(
+      () => setCurrentTime(Date.now()),
+      60_000,
+    );
+
+    return () => window.clearInterval(interval);
+  }, []);
+
   const upcomingEvents = useMemo(
-    () => events.filter(isFutureEvent),
-    [events],
+    () => events.filter((event) => isFutureEvent(event, currentTime)),
+    [currentTime, events],
   );
 
   const nextEvent = upcomingEvents[0];
