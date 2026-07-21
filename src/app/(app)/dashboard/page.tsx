@@ -1,11 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Clock3, Sparkles, Pencil } from "lucide-react";
+import { CalendarCheck, Clock3, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Event } from "@/types/event";
-import type { Artist } from "@/types/artist";
 
 import { EventCard } from "@/components/orbit/event-card";
 import { PageHeader } from "@/components/orbit/page-header";
@@ -14,15 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  getMyArtistProfileService,
-  listArtistsService,
-} from "@/services/artists.service";
+import { getMyArtistProfileService } from "@/services/artists.service";
 import { listEventsService } from "@/services/events.service";
 import { formatEventDate } from "@/utils/formatEventDate";
 import {
   canCreateEvent,
-  canManageArtists,
   isAgencyArtist,
   isIndependentArtist,
 } from "@/utils/auth-permissions";
@@ -31,22 +26,14 @@ function isFutureEvent(event: Event) {
   return new Date(event.eventDate).getTime() >= new Date().setHours(0, 0, 0, 0);
 }
 
-function sortByEventDate(first: Event, second: Event) {
-  return (
-    new Date(first.eventDate).getTime() - new Date(second.eventDate).getTime()
-  );
-}
-
 export default function DashboardPage() {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
-  const [artists, setArtists] = useState<Artist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const isArtistFromAgency = isAgencyArtist(user);
   const isIndependentArtistUser = isIndependentArtist(user);
   const isArtistDashboard = isArtistFromAgency || isIndependentArtistUser;
-  const showArtistStats = canManageArtists(user);
   const dashboardEyebrow = isIndependentArtistUser
     ? undefined
     : (user?.organizationName ?? "RewindJ");
@@ -68,18 +55,9 @@ export default function DashboardPage() {
       try {
         setIsLoading(true);
 
-        if (isArtistDashboard) {
-          const eventData = await listEventsService();
-
-          setEvents(eventData.data);
-          return;
-        }
-
         const eventData = await listEventsService();
-        const artistData = showArtistStats ? await listArtistsService() : [];
 
         setEvents(eventData.data);
-        setArtists(artistData);
       } catch (error) {
         console.error("Erro ao buscar dados do dashboard:", error);
       } finally {
@@ -88,14 +66,22 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
-  }, [isArtistDashboard, showArtistStats, user]);
+  }, [user]);
 
   const upcomingEvents = useMemo(
-    () => events.filter(isFutureEvent).sort(sortByEventDate),
+    () => events.filter(isFutureEvent),
     [events],
   );
 
   const nextEvent = upcomingEvents[0];
+  const confirmedEventsCount = useMemo(
+    () => events.filter((event) => event.status === "CONFIRMED").length,
+    [events],
+  );
+  const negotiatingEventsCount = useMemo(
+    () => events.filter((event) => event.status === "NEGOTIATING").length,
+    [events],
+  );
 
   return (
     <div>
@@ -116,10 +102,7 @@ export default function DashboardPage() {
         }
       />
 
-      <section
-        className={`mb-6 grid gap-3 ${
-          showArtistStats ? "sm:grid-cols-2 xl:grid-cols-3" : "sm:grid-cols-2"
-        }`}>
+      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           icon={Clock3}
           label={isArtistDashboard ? "Próximo show" : "Próximo evento"}
@@ -129,23 +112,17 @@ export default function DashboardPage() {
 
         <StatCard
           icon={CalendarCheck}
-          label={isArtistDashboard ? "Eventos futuros" : "Eventos ativos"}
-          value={isLoading ? "--" : String(upcomingEvents.length)}
-          detail={
-            nextEvent
-              ? `${nextEvent.city}, ${nextEvent.state}`
-              : "Nenhum evento futuro"
-          }
+          label="Eventos fechados"
+          value={isLoading ? "--" : String(confirmedEventsCount)}
+          detail="Eventos confirmados"
         />
 
-        {showArtistStats && (
-          <StatCard
-            icon={Sparkles}
-            label="Artistas"
-            value={String(artists.length)}
-            detail="Na organização"
-          />
-        )}
+        <StatCard
+          icon={CalendarCheck}
+          label="Eventos em negociação"
+          value={isLoading ? "--" : String(negotiatingEventsCount)}
+          detail="Aguardando confirmação"
+        />
       </section>
 
       <section
