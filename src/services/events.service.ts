@@ -1,6 +1,7 @@
 import { api } from "@/libs/axios";
 import type {
   CreateEventPayload,
+  DashboardSummaryResponse,
   Event,
   EventDetails,
   EventsResponse,
@@ -13,6 +14,14 @@ export async function createEventService(data: CreateEventPayload) {
 
 export async function listEventsService(page = 1) {
   const response = await api.get<EventsResponse>(`/events?page=${page}`);
+  return response.data;
+}
+
+export async function getDashboardSummaryService() {
+  const response = await api.get<DashboardSummaryResponse>(
+    "/events/dashboard-summary",
+  );
+
   return response.data;
 }
 

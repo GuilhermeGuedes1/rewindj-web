@@ -52,6 +52,12 @@ export interface EventsResponse {
   data: Event[];
 }
 
+export interface DashboardSummaryResponse {
+  confirmedEvents: number;
+  negotiatingEvents: number;
+  nextEvent: Event | null;
+}
+
 interface EventPayloadBase {
   title: string;
   eventDate: string;
