@@ -137,6 +137,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <main className="min-h-screen pb-24 lg:pb-0">
       <div className="mx-auto grid min-h-screen w-full max-w-7xl lg:grid-cols-[17rem_1fr]">

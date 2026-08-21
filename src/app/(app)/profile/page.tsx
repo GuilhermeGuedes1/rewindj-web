@@ -20,7 +20,6 @@ import {
   getMyArtistProfileService,
   updateMyArtistProfileService,
 } from "@/services/artists.service";
-import { updateMeService } from "@/services/auth.service";
 import type { Artist, UpdateMyArtistPayload } from "@/types/artist";
 
 type AccountFormState = {
@@ -29,8 +28,10 @@ type AccountFormState = {
 };
 
 type ArtistFormState = {
+  name: string;
   stageName: string;
   birthDate: string;
+  phone: string;
   address: string;
   city: string;
   state: string;
@@ -77,8 +78,10 @@ function formatDate(value?: string | null) {
 
 function getInitialArtistForm(profile: Artist): ArtistFormState {
   return {
+    name: profile.name ?? "",
     stageName: profile.stageName ?? "",
     birthDate: toDateInputValue(profile.birthDate),
+    phone: profile.phone ?? "",
     address: profile.address ?? "",
     city: profile.city ?? "",
     state: profile.state ?? "",
@@ -112,8 +115,10 @@ export default function ProfilePage() {
   });
   const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const [artistForm, setArtistForm] = useState<ArtistFormState>({
+    name: "",
     stageName: "",
     birthDate: "",
+    phone: "",
     address: "",
     city: "",
     state: "",
@@ -133,7 +138,7 @@ export default function ProfilePage() {
     const nextAccount = {
       name: user?.name ?? "",
       email: user?.email ?? "",
-      phone: user?.phone ?? "",
+      phone: "",
     };
 
     setAccount(nextAccount);
@@ -141,7 +146,7 @@ export default function ProfilePage() {
       name: nextAccount.name,
       phone: nextAccount.phone,
     });
-  }, [user?.email, user?.name, user?.phone]);
+  }, [user?.email, user?.name]);
 
   useEffect(() => {
     async function loadArtistProfile() {
@@ -159,6 +164,15 @@ export default function ProfilePage() {
 
         setArtistProfile(data);
         setArtistForm(getInitialArtistForm(data));
+        setAccount((current) => ({
+          ...current,
+          name: data.name,
+          phone: data.phone ?? "",
+        }));
+        setAccountForm({
+          name: data.name,
+          phone: data.phone ?? "",
+        });
       } catch {
         setArtistProfile(null);
         setArtistError("Perfil artístico ainda não encontrado.");
@@ -230,17 +244,27 @@ export default function ProfilePage() {
       setAccountError(null);
       setAccountSuccess(null);
 
-      const updatedUser = await updateMeService({
+      if (!artistProfile) return;
+
+      const updatedArtist = await updateMyArtistProfileService({
         name: accountForm.name.trim(),
+        stageName: artistProfile.stageName,
         phone: normalizeOptional(accountForm.phone),
+        birthDate: artistProfile.birthDate,
+        address: artistProfile.address,
+        city: artistProfile.city,
+        state: artistProfile.state,
+        pixKey: artistProfile.pixKey,
       });
 
       const nextAccount = {
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone ?? "",
+        name: updatedArtist.name,
+        email: account.email,
+        phone: updatedArtist.phone ?? "",
       };
 
+      setArtistProfile(updatedArtist);
+      setArtistForm(getInitialArtistForm(updatedArtist));
       setAccount(nextAccount);
       setAccountForm({
         name: nextAccount.name,
@@ -248,7 +272,7 @@ export default function ProfilePage() {
       });
       setIsEditingAccount(false);
       setAccountSuccess("Conta atualizada com sucesso.");
-    } catch (error) {
+    } catch {
       setAccountError("Não foi possível salvar sua conta. Tente novamente.");
     } finally {
       setIsSavingAccount(false);
@@ -261,8 +285,10 @@ export default function ProfilePage() {
     if (!artistProfile) return;
 
     const payload: UpdateMyArtistPayload = {
+      name: artistForm.name.trim(),
       stageName: artistForm.stageName.trim(),
       birthDate: normalizeOptional(artistForm.birthDate),
+      phone: normalizeOptional(artistForm.phone),
       address: normalizeOptional(artistForm.address),
       city: normalizeOptional(artistForm.city),
       state: normalizeOptional(artistForm.state),

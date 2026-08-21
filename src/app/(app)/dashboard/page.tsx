@@ -27,13 +27,10 @@ export default function DashboardPage() {
   const [dashboardSummary, setDashboardSummary] =
     useState<DashboardSummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const isArtistFromAgency = isAgencyArtist(user);
   const isIndependentArtistUser = isIndependentArtist(user);
   const isArtistDashboard = isArtistFromAgency || isIndependentArtistUser;
-  const dashboardEyebrow = isIndependentArtistUser
-    ? undefined
-    : (user?.organizationName ?? "RewindJ");
+  const dashboardEyebrow = isIndependentArtistUser ? undefined : "RewindJ";
 
   const { data: artistProfile } = useQuery({
     queryKey: ["artists", "me"],
@@ -115,9 +112,7 @@ export default function DashboardPage() {
           icon={CalendarCheck}
           label="Eventos em negociação"
           value={
-            isLoading
-              ? "--"
-              : String(dashboardSummary?.negotiatingEvents ?? 0)
+            isLoading ? "--" : String(dashboardSummary?.negotiatingEvents ?? 0)
           }
           detail="Aguardando confirmação"
         />

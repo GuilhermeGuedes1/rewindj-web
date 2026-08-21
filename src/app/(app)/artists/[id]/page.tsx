@@ -89,9 +89,11 @@ export default function ArtistDetailsPage() {
               </Link>
             </Button>
 
-            <Button asChild>
-              <Link href={`/artists/${params.id}/edit`}>Editar artista</Link>
-            </Button>
+            {canManageArtists(user) ? (
+              <Button asChild>
+                <Link href={`/artists/${params.id}/edit`}>Editar artista</Link>
+              </Button>
+            ) : null}
           </div>
         }
       />
