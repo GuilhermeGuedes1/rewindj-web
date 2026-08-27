@@ -16,51 +16,35 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  invitesService,
-  type AcceptInvitePayload,
-  type InviteDetails,
-} from "@/services/invites.service";
-import { phoneMask } from "@/utils/phoneMask";
+import { invitesService, type InviteDetails } from "@/services/invites.service";
 
 type ArtistInviteAcceptFormProps = {
   token?: string | null;
 };
 
-const initialFormData: AcceptInvitePayload = {
-  name: "",
-  stageName: "",
-  birthDate: "",
-  phone: "",
-  address: "",
-  city: "",
-  state: "",
-  password: "",
-};
-
 function getApiErrorMessage(error: unknown) {
   if (!isAxiosError(error)) {
-    return "Não foi possível concluir seu cadastro agora.";
+    return "Não foi possível concluir o aceite do convite agora.";
   }
 
   const message = error.response?.data?.message;
 
   if (Array.isArray(message)) {
-    return message[0] ?? "Não foi possível concluir seu cadastro agora.";
+    return message[0] ?? "Não foi possível concluir o aceite do convite agora.";
   }
 
   if (typeof message === "string") {
     return message;
   }
 
-  return "Não foi possível concluir seu cadastro agora.";
+  return "Não foi possível concluir o aceite do convite agora.";
 }
 
 export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
   const router = useRouter();
   const [accepted, setAccepted] = useState(false);
   const [invite, setInvite] = useState<InviteDetails | null>(null);
-  const [formData, setFormData] = useState(initialFormData);
+  const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoadingInvite, setIsLoadingInvite] = useState(true);
   const [isAccepting, setIsAccepting] = useState(false);
@@ -91,18 +75,7 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
     loadInvite();
   }, [token]);
 
-  function updateField(name: keyof AcceptInvitePayload, value: string) {
-    setError(null);
-
-    setFormData((current) => ({
-      ...current,
-      [name]: value,
-    }));
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function acceptInvite() {
     if (isAccepting) return;
 
     if (!token) {
@@ -110,22 +83,17 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
       return;
     }
 
-    if (!formData.name.trim()) {
-      setError("Informe seu nome completo.");
+    if (!invite) {
+      setError("Convite não encontrado.");
       return;
     }
 
-    if (!formData.phone.trim()) {
-      setError("Informe seu telefone.");
-      return;
-    }
-
-    if (!formData.password.trim()) {
+    if (!invite.existingUser && !password.trim()) {
       setError("Informe uma senha.");
       return;
     }
 
-    if (formData.password !== confirmPassword) {
+    if (!invite.existingUser && password !== confirmPassword) {
       setError("As senhas não coincidem.");
       return;
     }
@@ -134,17 +102,10 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
       setIsAccepting(true);
       setError(null);
 
-      await invitesService.acceptInvite(token, {
-        ...formData,
-        name: formData.name.trim(),
-        stageName: formData.stageName?.trim(),
-        birthDate: formData.birthDate || undefined,
-        phone: formData.phone.replace(/\D/g, ""),
-        address: formData.address?.trim(),
-        city: formData.city?.trim(),
-        state: formData.state?.trim().toUpperCase(),
-        password: formData.password,
-      });
+      await invitesService.acceptInvite(
+        token,
+        invite.existingUser ? {} : { password },
+      );
 
       setAccepted(true);
     } catch (error) {
@@ -155,6 +116,11 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
     }
   }
 
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void acceptInvite();
+  }
+
   return (
     <Card className="orbit-shell mx-auto w-full max-w-xl">
       <CardHeader>
@@ -163,13 +129,19 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
         </div>
 
         <CardTitle>
-          {accepted ? "Cadastro concluído" : "Convite RewindJ"}
+          {accepted
+            ? "Convite aceito"
+            : invite?.existingUser
+              ? "Convite para organização"
+              : "Criar conta e aceitar convite"}
         </CardTitle>
 
         <CardDescription>
           {accepted
             ? "Seu acesso foi confirmado. Entre para continuar."
-            : "Complete seus dados de artista para entrar na organização."}
+            : invite?.existingUser
+              ? "Sua conta já existe. Confirme se deseja entrar nesta organização."
+              : "Defina uma senha para criar sua conta e entrar na organização."}
         </CardDescription>
       </CardHeader>
 
@@ -202,129 +174,74 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
             onClick={() => router.push("/login")}>
             Entrar
           </Button>
+        ) : invite?.existingUser ? (
+          <div className="space-y-4">
+            <div className="space-y-2 text-sm">
+              <p className="font-medium">
+                Você já possui uma conta no RewindJ.
+              </p>
+              <p className="text-muted-foreground">
+                Deseja entrar na organização {organizationName} como{" "}
+                {invite.role}?
+              </p>
+            </div>
+
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                size="lg"
+                onClick={() => void acceptInvite()}
+                disabled={isAccepting}>
+                {isAccepting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CheckCircle2 />
+                )}
+                {isAccepting ? "Aceitando..." : "Aceitar convite"}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                onClick={() => router.push("/login")}
+                disabled={isAccepting}>
+                Recusar
+              </Button>
+            </div>
+          </div>
         ) : (
           <form className="grid gap-4" onSubmit={handleSubmit}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome completo</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(event) => updateField("name", event.target.value)}
-                  placeholder="Rafael Lisboa"
-                  disabled={isAccepting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="stageName">Nome artístico</Label>
-                <Input
-                  id="stageName"
-                  value={formData.stageName}
-                  onChange={(event) =>
-                    updateField("stageName", event.target.value)
-                  }
-                  placeholder="DJ Rafa Lisboa"
-                  disabled={isAccepting}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="birthDate">Data de nascimento</Label>
-                <Input
-                  id="birthDate"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={(event) =>
-                    updateField("birthDate", event.target.value)
-                  }
-                  disabled={isAccepting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(event) =>
-                    updateField("phone", phoneMask(event.target.value))
-                  }
-                  placeholder="(21) 99999-9999"
-                  disabled={isAccepting}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input
-                id="address"
-                value={formData.address}
-                onChange={(event) => updateField("address", event.target.value)}
-                placeholder="Rua, número, complemento"
+                id="password"
+                type="password"
+                value={password}
+                onChange={(event) => {
+                  setError(null);
+                  setPassword(event.target.value);
+                }}
+                placeholder="Mínimo 6 caracteres"
+                required
                 disabled={isAccepting}
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-[1fr_7rem]">
-              <div className="space-y-2">
-                <Label htmlFor="city">Cidade</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(event) => updateField("city", event.target.value)}
-                  placeholder="Rio de Janeiro"
-                  disabled={isAccepting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="state">Estado</Label>
-                <Input
-                  id="state"
-                  maxLength={2}
-                  value={formData.state}
-                  onChange={(event) =>
-                    updateField("state", event.target.value.toUpperCase())
-                  }
-                  placeholder="RJ"
-                  disabled={isAccepting}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(event) =>
-                    updateField("password", event.target.value)
-                  }
-                  placeholder="Mínimo 6 caracteres"
-                  disabled={isAccepting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(event) => {
-                    setError(null);
-                    setConfirmPassword(event.target.value);
-                  }}
-                  placeholder="Repita sua senha"
-                  disabled={isAccepting}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(event) => {
+                  setError(null);
+                  setConfirmPassword(event.target.value);
+                }}
+                placeholder="Repita sua senha"
+                required
+                disabled={isAccepting}
+              />
             </div>
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -339,7 +256,9 @@ export function ArtistInviteAcceptForm({ token }: ArtistInviteAcceptFormProps) {
               ) : (
                 <CheckCircle2 />
               )}
-              {isAccepting ? "Concluindo..." : "Concluir cadastro"}
+              {isAccepting
+                ? "Criando conta..."
+                : "Criar conta e aceitar convite"}
             </Button>
           </form>
         )}

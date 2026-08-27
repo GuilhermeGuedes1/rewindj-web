@@ -18,6 +18,7 @@ type AuthContextData = {
   isLoading: boolean;
   isAuthenticated: boolean;
   refreshUser: () => Promise<AuthUser>;
+  updateUser: (data: Partial<AuthUser>) => void;
   login: (data: LoginData) => Promise<void>;
   loginWithToken: (accessToken: string, isNewUser?: boolean) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -47,6 +48,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(profile);
 
     return profile;
+  }
+
+  function updateUser(data: Partial<AuthUser>) {
+    setUser((current) => (current ? { ...current, ...data } : current));
   }
 
   async function persistSession(accessToken: string) {
@@ -139,6 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading,
         isAuthenticated,
         refreshUser,
+        updateUser,
         login,
         loginWithToken,
         register,

@@ -122,7 +122,7 @@ function ProfileItem({ label, value }: ProfileItemProps) {
 export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const isCompletingProfile = searchParams.get("complete") === "1";
   const [account, setAccount] = useState({
     name: "",
@@ -161,17 +161,15 @@ export default function ProfilePage() {
   );
 
   useEffect(() => {
-    const nextAccount = {
+    setAccount((current) => ({
+      ...current,
       name: user?.name ?? "",
       email: user?.email ?? "",
-      phone: "",
-    };
-
-    setAccount(nextAccount);
-    setAccountForm({
-      name: nextAccount.name,
-      phone: nextAccount.phone,
-    });
+    }));
+    setAccountForm((current) => ({
+      ...current,
+      name: user?.name ?? "",
+    }));
   }, [user?.email, user?.name]);
 
   useEffect(() => {
@@ -309,7 +307,7 @@ export default function ProfilePage() {
 
       if (!artistProfile) return;
 
-      const updatedArtist = await updateMyArtistProfileService({
+      await updateMyArtistProfileService({
         name: accountForm.name.trim(),
         stageName: artistProfile.stageName,
         phone: normalizeOptional(accountForm.phone),
@@ -319,6 +317,7 @@ export default function ProfilePage() {
         state: artistProfile.state,
         pixKey: artistProfile.pixKey,
       });
+      const updatedArtist = await getMyArtistProfileService();
 
       const nextAccount = {
         name: updatedArtist.name,
@@ -328,6 +327,7 @@ export default function ProfilePage() {
 
       setArtistProfile(updatedArtist);
       setArtistForm(getInitialArtistForm(updatedArtist));
+      updateUser({ name: updatedArtist.name });
       setAccount(nextAccount);
       setAccountForm({
         name: nextAccount.name,
@@ -362,10 +362,12 @@ export default function ProfilePage() {
       setArtistError(null);
       setArtistSuccess(null);
 
-      const updatedArtist = await updateMyArtistProfileService(payload);
+      await updateMyArtistProfileService(payload);
+      const updatedArtist = await getMyArtistProfileService();
 
       setArtistProfile(updatedArtist);
       setArtistForm(getInitialArtistForm(updatedArtist));
+      updateUser({ name: updatedArtist.name });
       setIsEditingArtist(false);
       setArtistSuccess("Perfil artístico atualizado com sucesso.");
 
