@@ -9,13 +9,8 @@ export type LoginData = {
 };
 
 export type RegisterData = {
-  name: string;
   email: string;
-  phone: string;
   password: string;
-  organizationName: string;
-  organizationEmail: string;
-  organizationDocument: string;
 };
 
 export type AuthUser = {
@@ -32,6 +27,12 @@ export type LoginResponse = {
   access_token: string;
 };
 
+export type RegisterResponse = {
+  access_token: string;
+  isNewUser: boolean;
+  user: AuthUser;
+};
+
 export async function loginService(data: LoginData) {
   const response = await api.post<LoginResponse>("/auth/login", data);
   return response.data;
@@ -46,7 +47,7 @@ export function googleLoginService() {
 }
 
 export async function registerService(data: RegisterData) {
-  const response = await api.post("/auth/register", data);
+  const response = await api.post<RegisterResponse>("/auth/register", data);
   return response.data;
 }
 

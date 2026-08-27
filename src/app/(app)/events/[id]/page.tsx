@@ -38,14 +38,9 @@ function fallback(value?: string | null) {
   return value && value.trim() ? value : "Não informado";
 }
 
+import { getArtistDisplayName } from "@/utils/artist";
 function getArtistName(event: EventDetails) {
-  const stageName = event.artist?.stageName;
-
-  if (stageName && stageName !== "string") {
-    return stageName;
-  }
-
-  return fallback(event.artist?.name);
+  return getArtistDisplayName(event.artist, "Artista não informado");
 }
 
 function contractStatus(value?: boolean | null) {

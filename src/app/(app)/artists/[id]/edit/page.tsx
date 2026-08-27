@@ -25,6 +25,7 @@ import {
 import type { Artist, UpdateArtistPayload } from "@/types/artist";
 import { useAuth } from "@/hooks/useAuth";
 import { canManageArtists } from "@/utils/auth-permissions";
+import { getArtistDisplayName } from "@/utils/artist";
 
 function normalizeOptional(value: string) {
   const trimmed = value.trim();
@@ -128,7 +129,7 @@ export default function ArtistEditPage() {
     <div>
       <PageHeader
         eyebrow="Editar artista"
-        title={artist?.stageName || artist?.name || "Artista"}
+        title={getArtistDisplayName(artist, "Artista")}
         description="Atualize as informações do artista dentro da organização."
         action={
           <Button variant="outline" asChild>

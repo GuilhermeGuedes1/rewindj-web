@@ -18,16 +18,22 @@ export function GoogleCallbackClient() {
 
     hasHandledCallback.current = true;
 
-    const token =
-      searchParams.get("token") ?? searchParams.get("access_token");
+    const token = searchParams.get("token") ?? searchParams.get("access_token");
+    const isNewUser = ["1", "true"].includes(
+      searchParams.get("isNewUser")?.toLowerCase() ?? "",
+    );
 
     if (!token) {
-      setError("Não foi possível concluir o login com Google. Tente novamente.");
+      setError(
+        "Não foi possível concluir o login com Google. Tente novamente.",
+      );
       return;
     }
 
-    loginWithToken(token).catch(() => {
-      setError("Não foi possível concluir o login com Google. Tente novamente.");
+    loginWithToken(token, isNewUser).catch(() => {
+      setError(
+        "Não foi possível concluir o login com Google. Tente novamente.",
+      );
     });
   }, [isLoading, loginWithToken, searchParams]);
 

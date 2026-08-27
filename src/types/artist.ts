@@ -17,7 +17,7 @@ export type Artist = {
 
 export type UpdateArtistPayload = {
   name: string;
-  stageName: string;
+  stageName?: string | null;
   birthDate?: string | null;
   phone?: string | null;
   address?: string | null;
@@ -28,7 +28,7 @@ export type UpdateArtistPayload = {
 
 export type UpdateMyArtistPayload = {
   name: string;
-  stageName: string;
+  stageName?: string | null;
   birthDate?: string | null;
   phone?: string | null;
   address?: string | null;

@@ -45,6 +45,7 @@ import {
   isIndependentArtist,
 } from "@/utils/auth-permissions";
 import { cn } from "@/utils/utils";
+import { getArtistDisplayName } from "@/utils/artist";
 
 function normalizeDate(value?: string | null) {
   if (!value) return "";
@@ -1029,7 +1030,7 @@ export default function NewEventPage() {
 
                   {artists.map((artist) => (
                     <option key={artist.id} value={artist.id}>
-                      {artist.stageName || artist.name}
+                      {getArtistDisplayName(artist)}
                     </option>
                   ))}
                 </select>

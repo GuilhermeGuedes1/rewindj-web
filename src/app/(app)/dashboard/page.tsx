@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getMyArtistProfileService } from "@/services/artists.service";
 import { getDashboardSummaryService } from "@/services/events.service";
 import { formatEventDate } from "@/utils/formatEventDate";
+import { getArtistDisplayName } from "@/utils/artist";
 import {
   canCreateEvent,
   isAgencyArtist,
@@ -39,8 +40,8 @@ export default function DashboardPage() {
   });
 
   const dashboardName = isArtistDashboard
-    ? artistProfile?.stageName || artistProfile?.name || user?.name || "DJ"
-    : user?.name;
+    ? getArtistDisplayName(artistProfile, user?.name || "DJ")
+    : user?.name || "Usuário";
 
   useEffect(() => {
     async function loadDashboard() {

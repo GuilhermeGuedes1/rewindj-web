@@ -29,14 +29,7 @@ function fallback(value?: string | null) {
   return value && value.trim() ? value : "Não informado";
 }
 
-function getArtistDisplayName(artist: Artist) {
-  if (artist.stageName && artist.stageName !== "string") {
-    return artist.stageName;
-  }
-
-  return artist.name;
-}
-
+import { getArtistDisplayName } from "@/utils/artist";
 export default function ArtistDetailsPage() {
   const router = useRouter();
   const { user } = useAuth();
