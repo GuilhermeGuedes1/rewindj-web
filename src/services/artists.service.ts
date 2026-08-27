@@ -44,6 +44,17 @@ export async function updateMyArtistProfileService(
   return response.data;
 }
 
+export async function uploadMyArtistProfileImageService(file: File) {
+  const formData = new FormData();
+  formData.append("profileImage", file);
+
+  const response = await api.post<Artist>(
+    "/artists/me/profile-image",
+    formData,
+  );
+  return response.data;
+}
+
 export async function listMyArtistEventsService() {
   const response = await api.get<Event[]>("/artists/me/events");
   return response.data;

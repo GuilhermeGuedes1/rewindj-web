@@ -7,5 +7,9 @@ export interface User {
   name: string;
   role: UserRole;
   organizationId: string | null;
+  organizationName?: string | null;
+  organization?: {
+    name: string;
+  } | null;
   isIndependent: boolean;
 }

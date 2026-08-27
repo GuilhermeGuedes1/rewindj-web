@@ -20,6 +20,10 @@ export type AuthUser = {
   role: UserRole;
   artistId?: string | null;
   organizationId: string | null;
+  organizationName?: string | null;
+  organization?: {
+    name: string;
+  } | null;
   isIndependent: boolean;
 };
 

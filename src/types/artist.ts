@@ -4,6 +4,7 @@ export type Artist = {
   stageName: string;
   email?: string | null;
   phone?: string | null;
+  profileImageUrl?: string | null;
   profileImage?: string | null;
   profileImageKey?: string | null;
   birthDate?: string | null;

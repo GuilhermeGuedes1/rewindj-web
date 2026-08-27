@@ -16,13 +16,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { ArtistAvatar } from "@/components/orbit/artist-avatar";
 import { useAuth } from "@/hooks/useAuth";
 import type { AuthUser } from "@/services/auth.service";
 import { cn } from "@/utils/utils";
-import type { Artist } from "@/types/artist";
 import { getMyArtistProfileService } from "@/services/artists.service";
 import { getArtistDisplayName } from "@/utils/artist";
 import {
@@ -78,8 +78,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const hasArtistProfile = user?.role === "ARTIST" || isIndependentArtist(user);
+  const { data: artistProfile } = useQuery({
+    queryKey: ["artists", "me"],
+    queryFn: getMyArtistProfileService,
+    enabled: hasArtistProfile,
+  });
   const shellDisplayName = hasArtistProfile
     ? getArtistDisplayName(artistProfile, user?.name || "Rewindj user")
     : user?.name || "Rewindj user";
@@ -105,24 +109,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    async function loadArtistProfile() {
-      if (!user || !hasArtistProfile) {
-        setArtistProfile(null);
-        return;
-      }
-
-      try {
-        const data = await getMyArtistProfileService();
-        setArtistProfile(data);
-      } catch (error) {
-        console.error("Erro ao carregar perfil artístico no shell:", error);
-      }
-    }
-
-    loadArtistProfile();
-  }, [hasArtistProfile, user]);
 
   function handleLogout() {
     setMobileMenuOpen(false);
@@ -186,7 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="flex items-center justify-between gap-3">
                 <ArtistAvatar
                   name={shellDisplayName}
-                  imageUrl={artistProfile?.profileImage}
+                  imageUrl={artistProfile?.profileImageUrl}
                   className="size-10"
                 />
                 <div className="min-w-0">
@@ -269,7 +255,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <div className="flex min-w-0 items-center gap-3">
                 <ArtistAvatar
                   name={shellDisplayName}
-                  imageUrl={artistProfile?.profileImage}
+                  imageUrl={artistProfile?.profileImageUrl}
                   className="size-10"
                 />
                 <div className="min-w-0">

@@ -31,7 +31,9 @@ export default function DashboardPage() {
   const isArtistFromAgency = isAgencyArtist(user);
   const isIndependentArtistUser = isIndependentArtist(user);
   const isArtistDashboard = isArtistFromAgency || isIndependentArtistUser;
-  const dashboardEyebrow = isIndependentArtistUser ? undefined : "RewindJ";
+  const dashboardEyebrow = user?.organizationId
+    ? (user.organization?.name ?? user.organizationName ?? "RewindJ")
+    : "RewindJ";
 
   const { data: artistProfile } = useQuery({
     queryKey: ["artists", "me"],

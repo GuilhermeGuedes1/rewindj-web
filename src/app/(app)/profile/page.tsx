@@ -12,6 +12,7 @@ import {
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { PageHeader } from "@/components/orbit/page-header";
 import { ArtistAvatar } from "@/components/orbit/artist-avatar";
@@ -21,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyArtistProfileService,
+  uploadMyArtistProfileImageService,
   updateMyArtistProfileService,
 } from "@/services/artists.service";
 import type { Artist, UpdateMyArtistPayload } from "@/types/artist";
@@ -122,6 +124,7 @@ function ProfileItem({ label, value }: ProfileItemProps) {
 export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { user, updateUser } = useAuth();
   const isCompletingProfile = searchParams.get("complete") === "1";
   const [account, setAccount] = useState({
@@ -149,16 +152,20 @@ export default function ProfilePage() {
   const [isLoadingArtist, setIsLoadingArtist] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
   const [isSavingArtist, setIsSavingArtist] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
   const [artistError, setArtistError] = useState<string | null>(null);
   const [artistSuccess, setArtistSuccess] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageSuccess, setImageSuccess] = useState<string | null>(null);
   const [selectedImagePreview, setSelectedImagePreview] = useState<
     string | null
   >(null);
   const [selectedImageName, setSelectedImageName] = useState<string | null>(
     null,
   );
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     setAccount((current) => ({
@@ -194,8 +201,9 @@ export default function ProfilePage() {
 
         setArtistProfile(data);
         setArtistForm(getInitialArtistForm(data));
-        setSelectedImagePreview(data.profileImage ?? null);
+        setSelectedImagePreview(data.profileImageUrl ?? null);
         setSelectedImageName(null);
+        setSelectedImageFile(null);
         setAccount((current) => ({
           ...current,
           name: data.name,
@@ -236,25 +244,59 @@ export default function ProfilePage() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setArtistError("Selecione um arquivo de imagem válido.");
+      setImageError("Selecione um arquivo de imagem válido.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setArtistError("A imagem deve ter no máximo 5 MB.");
+      setImageError("A imagem deve ter no máximo 5 MB.");
       event.target.value = "";
       return;
     }
 
-    setArtistError(null);
+    setImageError(null);
+    setImageSuccess(null);
     setSelectedImageName(file.name);
+    setSelectedImageFile(file);
     setSelectedImagePreview(URL.createObjectURL(file));
   }
 
   function handleRemoveImagePreview() {
     setSelectedImageName(null);
-    setSelectedImagePreview(artistProfile?.profileImage ?? null);
+    setSelectedImageFile(null);
+    setSelectedImagePreview(artistProfile?.profileImageUrl ?? null);
+  }
+
+  async function handleImageSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedImageFile || isUploadingImage) return;
+
+    try {
+      setIsUploadingImage(true);
+      setImageError(null);
+      setImageSuccess(null);
+
+      const updatedArtist =
+        await uploadMyArtistProfileImageService(selectedImageFile);
+
+      setArtistProfile(updatedArtist);
+      setSelectedImagePreview(updatedArtist.profileImageUrl ?? null);
+      setSelectedImageName(null);
+      setSelectedImageFile(null);
+      queryClient.setQueryData(["artists", "me"], updatedArtist);
+      queryClient.setQueryData<Artist[]>(["artists"], (currentArtists) =>
+        currentArtists?.map((artist) =>
+          artist.id === updatedArtist.id ? updatedArtist : artist,
+        ),
+      );
+      setImageSuccess("Foto de perfil atualizada com sucesso.");
+    } catch {
+      setImageError("Não foi possível enviar sua foto. Tente novamente.");
+    } finally {
+      setIsUploadingImage(false);
+    }
   }
 
   function handleStartAccountEditing() {
@@ -279,8 +321,9 @@ export default function ProfilePage() {
   function handleStartArtistEditing() {
     if (artistProfile) {
       setArtistForm(getInitialArtistForm(artistProfile));
-      setSelectedImagePreview(artistProfile.profileImage ?? null);
+      setSelectedImagePreview(artistProfile.profileImageUrl ?? null);
       setSelectedImageName(null);
+      setSelectedImageFile(null);
     }
 
     setArtistError(null);
@@ -335,6 +378,7 @@ export default function ProfilePage() {
       });
       setIsEditingAccount(false);
       setAccountSuccess("Conta atualizada com sucesso.");
+      queryClient.setQueryData(["artists", "me"], updatedArtist);
     } catch {
       setAccountError("Não foi possível salvar sua conta. Tente novamente.");
     } finally {
@@ -367,7 +411,9 @@ export default function ProfilePage() {
 
       setArtistProfile(updatedArtist);
       setArtistForm(getInitialArtistForm(updatedArtist));
+      setSelectedImagePreview(updatedArtist.profileImageUrl ?? null);
       updateUser({ name: updatedArtist.name });
+      queryClient.setQueryData(["artists", "me"], updatedArtist);
       setIsEditingArtist(false);
       setArtistSuccess("Perfil artístico atualizado com sucesso.");
 
@@ -409,6 +455,91 @@ export default function ProfilePage() {
       />
 
       <div className="space-y-4">
+        {user?.artistId ? (
+          <form onSubmit={handleImageSubmit}>
+            <Card className="orbit-shell overflow-hidden">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <ArtistAvatar
+                      name={getArtistDisplayName(
+                        artistProfile ?? { name: account.name },
+                      )}
+                      imageUrl={selectedImagePreview}
+                      className="size-20"
+                    />
+                    <div>
+                      <h2 className="text-xl font-semibold tracking-normal">
+                        Foto de perfil
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Escolha a imagem que será exibida no seu perfil.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 sm:justify-end">
+                    <label
+                      htmlFor="artist-profile-image"
+                      className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-accent">
+                      <Camera className="size-4" />
+                      Escolher foto
+                    </label>
+                    <input
+                      id="artist-profile-image"
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleImageChange}
+                      disabled={isUploadingImage}
+                    />
+                    {selectedImageFile ? (
+                      <Button type="submit" disabled={isUploadingImage}>
+                        {isUploadingImage ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Save />
+                        )}
+                        {isUploadingImage ? "Enviando..." : "Salvar foto"}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {selectedImageName ? (
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+                    <span className="text-muted-foreground">
+                      Foto selecionada: {selectedImageName}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveImagePreview}
+                      disabled={isUploadingImage}>
+                      Remover seleção
+                    </Button>
+                  </div>
+                ) : null}
+                {imageError ? (
+                  <div className="mt-4 rounded-lg border border-destructive/40 bg-muted/40 p-4 text-sm text-destructive">
+                    {imageError}
+                  </div>
+                ) : null}
+                {imageSuccess ? (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/40 bg-muted/40 p-4 text-sm text-primary">
+                    <CheckCircle2 className="size-4" />
+                    {imageSuccess}
+                  </div>
+                ) : null}
+                <p className="mt-3 text-xs text-muted-foreground">
+                  JPG, PNG ou outro formato de imagem. Até 5 MB.
+                </p>
+              </CardContent>
+            </Card>
+          </form>
+        ) : null}
+
         <form onSubmit={handleAccountSubmit}>
           <Card className="orbit-shell overflow-hidden">
             <CardContent className="p-5 sm:p-6">
@@ -576,52 +707,6 @@ export default function ProfilePage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       {isEditingArtist ? (
                         <>
-                          <div className="grid gap-3 sm:col-span-2">
-                            <div className="flex items-center gap-4">
-                              <ArtistAvatar
-                                name={getArtistDisplayName(artistProfile)}
-                                imageUrl={selectedImagePreview}
-                                className="size-20"
-                              />
-                              <div className="space-y-2">
-                                <label
-                                  htmlFor="artist-profile-image"
-                                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-accent">
-                                  <Camera className="size-4" />
-                                  Alterar foto
-                                </label>
-                                <input
-                                  id="artist-profile-image"
-                                  type="file"
-                                  accept="image/*"
-                                  className="sr-only"
-                                  onChange={handleImageChange}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  JPG, PNG ou outro formato de imagem. Até 5 MB.
-                                </p>
-                              </div>
-                            </div>
-                            {selectedImageName ? (
-                              <div className="flex flex-wrap items-center gap-3 text-sm">
-                                <span className="text-muted-foreground">
-                                  Prévia selecionada: {selectedImageName}
-                                </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleRemoveImagePreview}>
-                                  Remover seleção
-                                </Button>
-                              </div>
-                            ) : null}
-                            <p className="text-xs text-muted-foreground">
-                              A prévia é local. O backend ainda não oferece
-                              endpoint ou contrato de upload do Artist.
-                            </p>
-                          </div>
-
                           {isCompletingProfile ? (
                             <div className="grid gap-2">
                               <label

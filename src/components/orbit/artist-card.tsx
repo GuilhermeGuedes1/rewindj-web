@@ -28,7 +28,7 @@ export function ArtistCard({ artist }: ArtistCardProps) {
             <div className="flex min-w-0 items-center gap-3">
               <ArtistAvatar
                 name={getArtistDisplayName(artist)}
-                imageUrl={artist.profileImage}
+                imageUrl={artist.profileImageUrl}
                 className="size-12"
               />
               <div className="min-w-0 space-y-2">
