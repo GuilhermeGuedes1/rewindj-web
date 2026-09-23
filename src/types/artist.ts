@@ -4,6 +4,9 @@ export type Artist = {
   stageName: string;
   email?: string | null;
   phone?: string | null;
+  profileImageUrl?: string | null;
+  profileImage?: string | null;
+  profileImageKey?: string | null;
   birthDate?: string | null;
   address?: string | null;
   city?: string | null;
@@ -15,7 +18,7 @@ export type Artist = {
 
 export type UpdateArtistPayload = {
   name: string;
-  stageName: string;
+  stageName?: string | null;
   birthDate?: string | null;
   phone?: string | null;
   address?: string | null;
@@ -25,8 +28,10 @@ export type UpdateArtistPayload = {
 };
 
 export type UpdateMyArtistPayload = {
-  stageName: string;
+  name: string;
+  stageName?: string | null;
   birthDate?: string | null;
+  phone?: string | null;
   address?: string | null;
   city?: string | null;
   state?: string | null;

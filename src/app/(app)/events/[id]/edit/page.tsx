@@ -30,10 +30,8 @@ import {
 import { aiService } from "@/services/ai.service";
 import { listArtistsService } from "@/services/artists.service";
 import type { Artist } from "@/types/artist";
-import {
-  canCreateEvent,
-  canManageArtists,
-} from "@/utils/auth-permissions";
+import { canCreateEvent, canManageArtists } from "@/utils/auth-permissions";
+import { getArtistDisplayName } from "@/utils/artist";
 
 import {
   getEventByIdService,
@@ -715,7 +713,7 @@ export default function EditEventPage() {
 
                     {artists.map((artist) => (
                       <option key={artist.id} value={artist.id}>
-                        {artist.stageName || artist.name}
+                        {getArtistDisplayName(artist)}
                       </option>
                     ))}
                   </select>

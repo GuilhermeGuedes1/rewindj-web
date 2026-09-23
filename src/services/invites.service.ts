@@ -11,6 +11,7 @@ export interface InviteDetails {
     email?: string | null;
   };
   role: string;
+  existingUser: boolean;
   invitedBy?: string;
   expiresAt?: string;
 }
@@ -21,14 +22,7 @@ export interface AcceptInviteResponse {
 }
 
 export interface AcceptInvitePayload {
-  name: string;
-  stageName?: string;
-  birthDate?: string;
-  phone: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  password: string;
+  password?: string;
 }
 
 export interface CreateInvitePayload {

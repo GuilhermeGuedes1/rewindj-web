@@ -29,14 +29,7 @@ function fallback(value?: string | null) {
   return value && value.trim() ? value : "Não informado";
 }
 
-function getArtistDisplayName(artist: Artist) {
-  if (artist.stageName && artist.stageName !== "string") {
-    return artist.stageName;
-  }
-
-  return artist.name;
-}
-
+import { getArtistDisplayName } from "@/utils/artist";
 export default function ArtistDetailsPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -89,9 +82,11 @@ export default function ArtistDetailsPage() {
               </Link>
             </Button>
 
-            <Button asChild>
-              <Link href={`/artists/${params.id}/edit`}>Editar artista</Link>
-            </Button>
+            {canManageArtists(user) ? (
+              <Button asChild>
+                <Link href={`/artists/${params.id}/edit`}>Editar artista</Link>
+              </Button>
+            ) : null}
           </div>
         }
       />

@@ -17,8 +17,10 @@ type AuthContextData = {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<AuthUser>;
+  updateUser: (data: Partial<AuthUser>) => void;
   login: (data: LoginData) => Promise<void>;
-  loginWithToken: (accessToken: string) => Promise<void>;
+  loginWithToken: (accessToken: string, isNewUser?: boolean) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
 };
@@ -40,13 +42,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = !!user && !!token;
 
+  async function refreshUser() {
+    const profile = await profileService();
+
+    setUser(profile);
+
+    return profile;
+  }
+
+  function updateUser(data: Partial<AuthUser>) {
+    setUser((current) => (current ? { ...current, ...data } : current));
+  }
+
   async function persistSession(accessToken: string) {
+    localStorage.setItem(TOKEN_KEY, accessToken);
     api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
 
     try {
       const profile = await profileService();
 
-      localStorage.setItem(TOKEN_KEY, accessToken);
       setToken(accessToken);
       setUser(profile);
     } catch (err) {
@@ -68,18 +82,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     router.push("/dashboard");
   }
 
-  async function loginWithToken(accessToken: string) {
+  async function loginWithToken(accessToken: string, isNewUser = false) {
     await persistSession(accessToken);
 
-    router.replace("/dashboard");
+    router.replace(isNewUser ? "/profile?complete=1" : "/dashboard");
   }
 
   async function register(data: RegisterData) {
-    await registerService(data);
-    await login({
-      email: data.email,
-      password: data.password,
-    });
+    const { access_token, isNewUser } = await registerService(data);
+
+    await persistSession(access_token);
+
+    router.push(isNewUser ? "/profile?complete=1" : "/dashboard");
   }
 
   function logout() {
@@ -129,6 +143,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         token,
         isLoading,
         isAuthenticated,
+        refreshUser,
+        updateUser,
         login,
         loginWithToken,
         register,

@@ -16,13 +16,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { ArtistAvatar } from "@/components/orbit/artist-avatar";
 import { useAuth } from "@/hooks/useAuth";
 import type { AuthUser } from "@/services/auth.service";
 import { cn } from "@/utils/utils";
-import type { Artist } from "@/types/artist";
 import { getMyArtistProfileService } from "@/services/artists.service";
+import { getArtistDisplayName } from "@/utils/artist";
 import {
   canCreateEvent,
   isIndependentArtist,
@@ -76,11 +78,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const hasArtistProfile = user?.role === "ARTIST" || isIndependentArtist(user);
+  const { data: artistProfile } = useQuery({
+    queryKey: ["artists", "me"],
+    queryFn: getMyArtistProfileService,
+    enabled: hasArtistProfile,
+  });
   const shellDisplayName = hasArtistProfile
-    ? artistProfile?.stageName || artistProfile?.name || user?.name
-    : user?.name;
+    ? getArtistDisplayName(artistProfile, user?.name || "Rewindj user")
+    : user?.name || "Rewindj user";
   const visibleNavItems = navItems.filter((item) =>
     canShowNavItem(item.href, user),
   );
@@ -104,24 +110,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    async function loadArtistProfile() {
-      if (!user || !hasArtistProfile) {
-        setArtistProfile(null);
-        return;
-      }
-
-      try {
-        const data = await getMyArtistProfileService();
-        setArtistProfile(data);
-      } catch (error) {
-        console.error("Erro ao carregar perfil artístico no shell:", error);
-      }
-    }
-
-    loadArtistProfile();
-  }, [hasArtistProfile, user]);
-
   function handleLogout() {
     setMobileMenuOpen(false);
     logout();
@@ -135,6 +123,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </main>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
@@ -178,6 +170,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
+                <ArtistAvatar
+                  name={shellDisplayName}
+                  imageUrl={artistProfile?.profileImageUrl}
+                  className="size-10"
+                />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">
                     {shellDisplayName ?? "rewindj user"}
@@ -255,13 +252,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="fixed inset-x-3 bottom-20 rounded-lg border border-border bg-card/95 p-4 shadow-panel"
             onClick={(event) => event.stopPropagation()}>
             <div className="mb-4 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">
-                  {shellDisplayName ?? "Rewindj user"}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {user?.email ?? "demo@rewindj.local"}
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <ArtistAvatar
+                  name={shellDisplayName}
+                  imageUrl={artistProfile?.profileImageUrl}
+                  className="size-10"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {shellDisplayName ?? "Rewindj user"}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {user?.email ?? "demo@rewindj.local"}
+                  </p>
+                </div>
               </div>
               <Button
                 variant="ghost"

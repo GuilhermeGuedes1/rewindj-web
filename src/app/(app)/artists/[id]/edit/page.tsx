@@ -23,6 +23,9 @@ import {
   updateArtistService,
 } from "@/services/artists.service";
 import type { Artist, UpdateArtistPayload } from "@/types/artist";
+import { useAuth } from "@/hooks/useAuth";
+import { canManageArtists } from "@/utils/auth-permissions";
+import { getArtistDisplayName } from "@/utils/artist";
 
 function normalizeOptional(value: string) {
   const trimmed = value.trim();
@@ -32,6 +35,7 @@ function normalizeOptional(value: string) {
 export default function ArtistEditPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
 
   const [artist, setArtist] = useState<Artist | null>(null);
   const [form, setForm] = useState({
@@ -49,6 +53,13 @@ export default function ArtistEditPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
+
+    if (!canManageArtists(user)) {
+      router.replace("/events");
+      return;
+    }
+
     async function loadArtist() {
       if (!params.id) return;
 
@@ -76,7 +87,7 @@ export default function ArtistEditPage() {
     }
 
     loadArtist();
-  }, [params.id]);
+  }, [params.id, router, user]);
 
   function handleChange(field: keyof typeof form, value: string) {
     setForm((current) => ({
@@ -118,7 +129,7 @@ export default function ArtistEditPage() {
     <div>
       <PageHeader
         eyebrow="Editar artista"
-        title={artist?.stageName || artist?.name || "Artista"}
+        title={getArtistDisplayName(artist, "Artista")}
         description="Atualize as informações do artista dentro da organização."
         action={
           <Button variant="outline" asChild>

@@ -1,27 +1,33 @@
 "use client";
 
 import {
+  Camera,
   CheckCircle2,
   Loader2,
   Pencil,
   Save,
   UserCircle,
-  Wallet,
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { PageHeader } from "@/components/orbit/page-header";
+import { ArtistAvatar } from "@/components/orbit/artist-avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyArtistProfileService,
+  uploadMyArtistProfileImageService,
   updateMyArtistProfileService,
 } from "@/services/artists.service";
-import { updateMeService } from "@/services/auth.service";
 import type { Artist, UpdateMyArtistPayload } from "@/types/artist";
+import { getArtistDisplayName } from "@/utils/artist";
+import { Building2 } from "lucide-react";
 
 type AccountFormState = {
   name: string;
@@ -29,8 +35,10 @@ type AccountFormState = {
 };
 
 type ArtistFormState = {
+  name: string;
   stageName: string;
   birthDate: string;
+  phone: string;
   address: string;
   city: string;
   state: string;
@@ -75,10 +83,24 @@ function formatDate(value?: string | null) {
   }).format(date);
 }
 
+function getOptionalArtistFields(form: ArtistFormState) {
+  return {
+    ...(form.stageName.trim() ? { stageName: form.stageName.trim() } : {}),
+    ...(form.birthDate.trim() ? { birthDate: form.birthDate.trim() } : {}),
+    ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
+    ...(form.address.trim() ? { address: form.address.trim() } : {}),
+    ...(form.city.trim() ? { city: form.city.trim() } : {}),
+    ...(form.state.trim() ? { state: form.state.trim() } : {}),
+    ...(form.pixKey.trim() ? { pixKey: form.pixKey.trim() } : {}),
+  };
+}
+
 function getInitialArtistForm(profile: Artist): ArtistFormState {
   return {
+    name: profile.name ?? "",
     stageName: profile.stageName ?? "",
     birthDate: toDateInputValue(profile.birthDate),
+    phone: profile.phone ?? "",
     address: profile.address ?? "",
     city: profile.city ?? "",
     state: profile.state ?? "",
@@ -100,7 +122,11 @@ function ProfileItem({ label, value }: ProfileItemProps) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const { user, updateUser } = useAuth();
+  const isCompletingProfile = searchParams.get("complete") === "1";
   const [account, setAccount] = useState({
     name: "",
     email: "",
@@ -112,8 +138,10 @@ export default function ProfilePage() {
   });
   const [artistProfile, setArtistProfile] = useState<Artist | null>(null);
   const [artistForm, setArtistForm] = useState<ArtistFormState>({
+    name: "",
     stageName: "",
     birthDate: "",
+    phone: "",
     address: "",
     city: "",
     state: "",
@@ -124,24 +152,38 @@ export default function ProfilePage() {
   const [isLoadingArtist, setIsLoadingArtist] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
   const [isSavingArtist, setIsSavingArtist] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
   const [artistError, setArtistError] = useState<string | null>(null);
   const [artistSuccess, setArtistSuccess] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageSuccess, setImageSuccess] = useState<string | null>(null);
+  const [selectedImagePreview, setSelectedImagePreview] = useState<
+    string | null
+  >(null);
+  const [selectedImageName, setSelectedImageName] = useState<string | null>(
+    null,
+  );
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const nextAccount = {
+    setAccount((current) => ({
+      ...current,
       name: user?.name ?? "",
       email: user?.email ?? "",
-      phone: user?.phone ?? "",
-    };
+    }));
+    setAccountForm((current) => ({
+      ...current,
+      name: user?.name ?? "",
+    }));
+  }, [user?.email, user?.name]);
 
-    setAccount(nextAccount);
-    setAccountForm({
-      name: nextAccount.name,
-      phone: nextAccount.phone,
-    });
-  }, [user?.email, user?.name, user?.phone]);
+  useEffect(() => {
+    if (isCompletingProfile) {
+      setIsEditingArtist(true);
+    }
+  }, [isCompletingProfile]);
 
   useEffect(() => {
     async function loadArtistProfile() {
@@ -159,6 +201,18 @@ export default function ProfilePage() {
 
         setArtistProfile(data);
         setArtistForm(getInitialArtistForm(data));
+        setSelectedImagePreview(data.profileImageUrl ?? null);
+        setSelectedImageName(null);
+        setSelectedImageFile(null);
+        setAccount((current) => ({
+          ...current,
+          name: data.name,
+          phone: data.phone ?? "",
+        }));
+        setAccountForm({
+          name: data.name,
+          phone: data.phone ?? "",
+        });
       } catch {
         setArtistProfile(null);
         setArtistError("Perfil artístico ainda não encontrado.");
@@ -184,6 +238,67 @@ export default function ProfilePage() {
     }));
   }
 
+  function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("Selecione um arquivo de imagem válido.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("A imagem deve ter no máximo 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    setImageError(null);
+    setImageSuccess(null);
+    setSelectedImageName(file.name);
+    setSelectedImageFile(file);
+    setSelectedImagePreview(URL.createObjectURL(file));
+  }
+
+  function handleRemoveImagePreview() {
+    setSelectedImageName(null);
+    setSelectedImageFile(null);
+    setSelectedImagePreview(artistProfile?.profileImageUrl ?? null);
+  }
+
+  async function handleImageSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedImageFile || isUploadingImage) return;
+
+    try {
+      setIsUploadingImage(true);
+      setImageError(null);
+      setImageSuccess(null);
+
+      const updatedArtist =
+        await uploadMyArtistProfileImageService(selectedImageFile);
+
+      setArtistProfile(updatedArtist);
+      setSelectedImagePreview(updatedArtist.profileImageUrl ?? null);
+      setSelectedImageName(null);
+      setSelectedImageFile(null);
+      queryClient.setQueryData(["artists", "me"], updatedArtist);
+      queryClient.setQueryData<Artist[]>(["artists"], (currentArtists) =>
+        currentArtists?.map((artist) =>
+          artist.id === updatedArtist.id ? updatedArtist : artist,
+        ),
+      );
+      setImageSuccess("Foto de perfil atualizada com sucesso.");
+    } catch {
+      setImageError("Não foi possível enviar sua foto. Tente novamente.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
   function handleStartAccountEditing() {
     setAccountForm({
       name: account.name,
@@ -206,6 +321,9 @@ export default function ProfilePage() {
   function handleStartArtistEditing() {
     if (artistProfile) {
       setArtistForm(getInitialArtistForm(artistProfile));
+      setSelectedImagePreview(artistProfile.profileImageUrl ?? null);
+      setSelectedImageName(null);
+      setSelectedImageFile(null);
     }
 
     setArtistError(null);
@@ -230,17 +348,29 @@ export default function ProfilePage() {
       setAccountError(null);
       setAccountSuccess(null);
 
-      const updatedUser = await updateMeService({
+      if (!artistProfile) return;
+
+      await updateMyArtistProfileService({
         name: accountForm.name.trim(),
+        stageName: artistProfile.stageName,
         phone: normalizeOptional(accountForm.phone),
+        birthDate: artistProfile.birthDate,
+        address: artistProfile.address,
+        city: artistProfile.city,
+        state: artistProfile.state,
+        pixKey: artistProfile.pixKey,
       });
+      const updatedArtist = await getMyArtistProfileService();
 
       const nextAccount = {
-        name: updatedUser.name,
-        email: updatedUser.email,
-        phone: updatedUser.phone ?? "",
+        name: updatedArtist.name,
+        email: account.email,
+        phone: updatedArtist.phone ?? "",
       };
 
+      setArtistProfile(updatedArtist);
+      setArtistForm(getInitialArtistForm(updatedArtist));
+      updateUser({ name: updatedArtist.name });
       setAccount(nextAccount);
       setAccountForm({
         name: nextAccount.name,
@@ -248,7 +378,8 @@ export default function ProfilePage() {
       });
       setIsEditingAccount(false);
       setAccountSuccess("Conta atualizada com sucesso.");
-    } catch (error) {
+      queryClient.setQueryData(["artists", "me"], updatedArtist);
+    } catch {
       setAccountError("Não foi possível salvar sua conta. Tente novamente.");
     } finally {
       setIsSavingAccount(false);
@@ -260,13 +391,14 @@ export default function ProfilePage() {
 
     if (!artistProfile) return;
 
+    if (!artistForm.name.trim()) {
+      setArtistError("Informe seu nome para continuar.");
+      return;
+    }
+
     const payload: UpdateMyArtistPayload = {
-      stageName: artistForm.stageName.trim(),
-      birthDate: normalizeOptional(artistForm.birthDate),
-      address: normalizeOptional(artistForm.address),
-      city: normalizeOptional(artistForm.city),
-      state: normalizeOptional(artistForm.state),
-      pixKey: normalizeOptional(artistForm.pixKey),
+      name: artistForm.name.trim(),
+      ...getOptionalArtistFields(artistForm),
     };
 
     try {
@@ -274,12 +406,20 @@ export default function ProfilePage() {
       setArtistError(null);
       setArtistSuccess(null);
 
-      const updatedArtist = await updateMyArtistProfileService(payload);
+      await updateMyArtistProfileService(payload);
+      const updatedArtist = await getMyArtistProfileService();
 
       setArtistProfile(updatedArtist);
       setArtistForm(getInitialArtistForm(updatedArtist));
+      setSelectedImagePreview(updatedArtist.profileImageUrl ?? null);
+      updateUser({ name: updatedArtist.name });
+      queryClient.setQueryData(["artists", "me"], updatedArtist);
       setIsEditingArtist(false);
       setArtistSuccess("Perfil artístico atualizado com sucesso.");
+
+      if (isCompletingProfile) {
+        router.push("/dashboard");
+      }
     } catch {
       setArtistError("Não foi possível salvar seu perfil. Tente novamente.");
     } finally {
@@ -287,17 +427,119 @@ export default function ProfilePage() {
     }
   }
 
-  const displayName = artistProfile?.stageName || account.name || "Meu Perfil";
+  const displayName = getArtistDisplayName(
+    artistProfile ?? { name: account.name },
+    "Meu Perfil",
+  );
+  const canCreateOrganization =
+    user?.role === "ARTIST" &&
+    user.isIndependent === true &&
+    !user.organizationId;
 
   return (
     <div>
       <PageHeader
         eyebrow="Meu Perfil"
-        title={displayName}
+        title={isCompletingProfile ? "Complete seu perfil" : displayName}
         description="Gerencie seus dados de conta e, quando disponível, seu perfil artístico."
+        action={
+          canCreateOrganization ? (
+            <Button asChild>
+              <Link href="/organization/create">
+                <Building2 />
+                Criar organização
+              </Link>
+            </Button>
+          ) : null
+        }
       />
 
       <div className="space-y-4">
+        {user?.artistId ? (
+          <form onSubmit={handleImageSubmit}>
+            <Card className="orbit-shell overflow-hidden">
+              <CardContent className="p-5 sm:p-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    <ArtistAvatar
+                      name={getArtistDisplayName(
+                        artistProfile ?? { name: account.name },
+                      )}
+                      imageUrl={selectedImagePreview}
+                      className="size-20"
+                    />
+                    <div>
+                      <h2 className="text-xl font-semibold tracking-normal">
+                        Foto de perfil
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        Escolha a imagem que será exibida no seu perfil.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 sm:justify-end">
+                    <label
+                      htmlFor="artist-profile-image"
+                      className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm font-medium transition-colors hover:bg-accent">
+                      <Camera className="size-4" />
+                      Escolher foto
+                    </label>
+                    <input
+                      id="artist-profile-image"
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleImageChange}
+                      disabled={isUploadingImage}
+                    />
+                    {selectedImageFile ? (
+                      <Button type="submit" disabled={isUploadingImage}>
+                        {isUploadingImage ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Save />
+                        )}
+                        {isUploadingImage ? "Enviando..." : "Salvar foto"}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+
+                {selectedImageName ? (
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+                    <span className="text-muted-foreground">
+                      Foto selecionada: {selectedImageName}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveImagePreview}
+                      disabled={isUploadingImage}>
+                      Remover seleção
+                    </Button>
+                  </div>
+                ) : null}
+                {imageError ? (
+                  <div className="mt-4 rounded-lg border border-destructive/40 bg-muted/40 p-4 text-sm text-destructive">
+                    {imageError}
+                  </div>
+                ) : null}
+                {imageSuccess ? (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/40 bg-muted/40 p-4 text-sm text-primary">
+                    <CheckCircle2 className="size-4" />
+                    {imageSuccess}
+                  </div>
+                ) : null}
+                <p className="mt-3 text-xs text-muted-foreground">
+                  JPG, PNG ou outro formato de imagem. Até 5 MB.
+                </p>
+              </CardContent>
+            </Card>
+          </form>
+        ) : null}
+
         <form onSubmit={handleAccountSubmit}>
           <Card className="orbit-shell overflow-hidden">
             <CardContent className="p-5 sm:p-6">
@@ -415,9 +657,11 @@ export default function ProfilePage() {
               <CardContent className="p-5 sm:p-6">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center rounded-full bg-primary/10">
-                      <Wallet className="size-6 text-primary" />
-                    </div>
+                    <ArtistAvatar
+                      name={artistProfile?.stageName || artistProfile?.name}
+                      imageUrl={selectedImagePreview}
+                      className="size-11"
+                    />
 
                     <div>
                       <h2 className="text-xl font-semibold tracking-normal">
@@ -463,6 +707,25 @@ export default function ProfilePage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       {isEditingArtist ? (
                         <>
+                          {isCompletingProfile ? (
+                            <div className="grid gap-2">
+                              <label
+                                className="text-sm font-medium"
+                                htmlFor="artist-name">
+                                Nome <span className="text-destructive">*</span>
+                              </label>
+                              <Input
+                                id="artist-name"
+                                value={artistForm.name}
+                                onChange={(event) =>
+                                  handleArtistChange("name", event.target.value)
+                                }
+                                placeholder="Seu nome completo"
+                                required
+                              />
+                            </div>
+                          ) : null}
+
                           <div className="grid gap-2">
                             <label
                               className="text-sm font-medium"
@@ -479,7 +742,6 @@ export default function ProfilePage() {
                                 )
                               }
                               placeholder="Nome artístico"
-                              required
                             />
                           </div>
 
@@ -623,7 +885,7 @@ export default function ProfilePage() {
                           ) : (
                             <>
                               <Save />
-                              Salvar
+                              {isCompletingProfile ? "Continuar" : "Salvar"}
                             </>
                           )}
                         </Button>

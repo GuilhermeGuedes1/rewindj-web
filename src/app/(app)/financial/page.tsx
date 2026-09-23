@@ -25,6 +25,7 @@ import type { Event } from "@/types/event";
 import { canManageArtists, canViewFinancial } from "@/utils/auth-permissions";
 import { formatEventDate } from "@/utils/formatEventDate";
 import { cn } from "@/utils/utils";
+import { getArtistDisplayName } from "@/utils/artist";
 
 const months = [
   { value: 1, label: "Janeiro" },
@@ -71,35 +72,41 @@ function sortFinancialEvents(first: Event, second: Event) {
 
 function getFinancialPerson(event: Event) {
   return (
-    event.artist?.stageName ||
-    event.artist?.name ||
+    (event.artist ? getArtistDisplayName(event.artist, "") : "") ||
     event.client?.companyName ||
     event.client?.name ||
     "Não informado"
   );
 }
 
-function isInSelectedPeriod(event: Event, month: number, year: number) {
-  const referenceDate = event.paymentDate ?? event.eventDate;
-  const date = new Date(referenceDate);
+function isInSelectedPeriod(
+  event: Event,
+  month: number | undefined,
+  year: number,
+) {
+  const date = new Date(event.eventDate);
 
-  return date.getMonth() + 1 === month && date.getFullYear() === year;
+  return (
+    (month === undefined || date.getMonth() + 1 === month) &&
+    date.getFullYear() === year
+  );
 }
 
 export default function FinancialPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const today = new Date();
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  const currentYear = today.getFullYear();
+  const [month, setMonth] = useState<number | undefined>();
   const [year, setYear] = useState(today.getFullYear());
   const [appliedMonth, setAppliedMonth] = useState<number | undefined>();
-  const [appliedYear, setAppliedYear] = useState<number | undefined>();
+  const [appliedYear, setAppliedYear] = useState<number>(currentYear);
   const [artistId, setArtistId] = useState("");
   const [page, setPage] = useState(1);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [query, setQuery] = useState("");
   const canAccessFinancial = canViewFinancial(user);
   const canFilterByArtist = canManageArtists(user);
-  const hasDateFilter = appliedMonth !== undefined && appliedYear !== undefined;
+  const hasMonthFilter = appliedMonth !== undefined;
   const appliedArtistId = canFilterByArtist ? artistId || undefined : undefined;
   const {
     data: eventsResponse,
@@ -107,14 +114,11 @@ export default function FinancialPage() {
     isError: eventsError,
     error: eventsQueryError,
   } = useEvents(page, !isAuthLoading && canAccessFinancial);
-  const summaryParams =
-    hasDateFilter || appliedArtistId
-      ? {
-          month: appliedMonth,
-          year: appliedYear,
-          artistId: appliedArtistId,
-        }
-      : undefined;
+  const summaryParams = {
+    month: appliedMonth,
+    year: appliedYear,
+    artistId: appliedArtistId,
+  };
 
   const {
     data: summary,
@@ -129,13 +133,15 @@ export default function FinancialPage() {
 
   function handleApplyDateFilter() {
     setAppliedMonth(month);
-    setAppliedYear(year);
+    setAppliedYear(month === undefined ? currentYear : year);
     setPage(1);
   }
 
   function handleShowAllEvents() {
     setAppliedMonth(undefined);
-    setAppliedYear(undefined);
+    setMonth(undefined);
+    setYear(currentYear);
+    setAppliedYear(currentYear);
     setPage(1);
   }
 
@@ -172,19 +178,9 @@ export default function FinancialPage() {
         .filter((event) =>
           appliedArtistId ? event.artist?.id === appliedArtistId : true,
         )
-        .filter((event) =>
-          hasDateFilter
-            ? isInSelectedPeriod(event, appliedMonth, appliedYear)
-            : true,
-        )
+        .filter((event) => isInSelectedPeriod(event, appliedMonth, appliedYear))
         .sort(sortFinancialEvents),
-    [
-      appliedArtistId,
-      appliedMonth,
-      appliedYear,
-      eventsResponse,
-      hasDateFilter,
-    ],
+    [appliedArtistId, appliedMonth, appliedYear, eventsResponse],
   );
 
   const localSummary = useMemo(() => {
@@ -265,7 +261,7 @@ export default function FinancialPage() {
                 <option value="">Todos os artistas</option>
                 {artists.map((artist) => (
                   <option key={artist.id} value={artist.id}>
-                    {artist.stageName || artist.name}
+                    {getArtistDisplayName(artist)}
                   </option>
                 ))}
               </select>
@@ -277,12 +273,15 @@ export default function FinancialPage() {
               Mês
             </span>
             <select
-              value={month}
+              value={month ?? ""}
               onChange={(event) => {
-                setMonth(Number(event.target.value));
+                setMonth(
+                  event.target.value ? Number(event.target.value) : undefined,
+                );
                 setPage(1);
               }}
               className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring">
+              <option value="">Todos os meses</option>
               {months.map((item) => (
                 <option key={item.value} value={item.value}>
                   {item.label}
@@ -321,7 +320,7 @@ export default function FinancialPage() {
               onClick={handleShowAllEvents}
               className={cn(
                 "h-10 rounded-md border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                !hasDateFilter && "bg-accent text-foreground",
+                !hasMonthFilter && "bg-accent text-foreground",
               )}>
               Mostrar todos
             </button>
@@ -347,7 +346,7 @@ export default function FinancialPage() {
         <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             icon={CalendarDays}
-            label={hasDateFilter ? "Eventos no mês" : "Eventos"}
+            label={hasMonthFilter ? "Eventos no mês" : "Eventos no ano"}
             value={
               isSummaryLoading && isEventsLoading
                 ? "--"
@@ -358,7 +357,7 @@ export default function FinancialPage() {
 
           <StatCard
             icon={CircleDollarSign}
-            label={hasDateFilter ? "Receita do mês" : "Receita total"}
+            label={hasMonthFilter ? "Receita do mês" : "Receita do ano"}
             value={
               isSummaryLoading && isEventsLoading
                 ? "--"
@@ -541,8 +540,7 @@ export default function FinancialPage() {
           <Button
             variant="outline"
             onClick={() => setPage((page) => page - 1)}
-            disabled={page === 1}
-          >
+            disabled={page === 1}>
             Anterior
           </Button>
           <span className="text-sm text-muted-foreground">
@@ -551,8 +549,7 @@ export default function FinancialPage() {
           <Button
             variant="outline"
             onClick={() => setPage((page) => page + 1)}
-            disabled={page === eventsResponse.meta.pageTotal}
-          >
+            disabled={page === eventsResponse.meta.pageTotal}>
             Próxima
           </Button>
         </div>

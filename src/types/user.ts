@@ -1,14 +1,15 @@
 export type UserRole = "CEO" | "ADMIN" | "PRODUCER" | "ARTIST";
-export type AccountType = "AGENCY" | "INDEPENDENT_ARTIST";
 
 export interface User {
-  id: string;
-  name: string;
+  sub?: string;
   email: string;
-  phone?: string | null;
-  role: UserRole;
-  accountType: AccountType;
   artistId?: string | null;
+  name: string;
+  role: UserRole;
   organizationId: string | null;
   organizationName?: string | null;
+  organization?: {
+    name: string;
+  } | null;
+  isIndependent: boolean;
 }

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Event } from "@/types/event";
 import { formatEventDate } from "@/utils/formatEventDate";
 import { cn } from "@/utils/utils";
+import { getArtistDisplayName } from "@/utils/artist";
 
 interface EventCardProps {
   event: Event;
@@ -26,10 +27,7 @@ function getStatusLabel(status?: string | null) {
 }
 
 export function EventCard({ event, featured = false }: EventCardProps) {
-  const artistName =
-    event.artist?.stageName && event.artist.stageName !== "string"
-      ? event.artist.stageName
-      : (event.artist?.name ?? "Artista não definido");
+  const artistName = getArtistDisplayName(event.artist, "Artista não definido");
 
   const formattedDate = formatEventDate(event.eventDate, {
     day: "2-digit",

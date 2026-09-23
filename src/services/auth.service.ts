@@ -1,5 +1,5 @@
 import { api } from "@/libs/axios";
-import type { AccountType, UserRole } from "@/types/user";
+import type { UserRole } from "@/types/user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -9,35 +9,32 @@ export type LoginData = {
 };
 
 export type RegisterData = {
-  name: string;
   email: string;
-  phone: string;
   password: string;
-  organizationName: string;
-  organizationEmail: string;
-  organizationDocument: string;
-};
-
-export type UpdateMeData = {
-  name: string;
-  phone: string | null;
 };
 
 export type AuthUser = {
   sub?: string;
-  id?: string;
   email: string;
   name: string;
-  phone?: string | null;
   role: UserRole;
-  accountType: AccountType;
   artistId?: string | null;
   organizationId: string | null;
-  organizationName: string | null;
+  organizationName?: string | null;
+  organization?: {
+    name: string;
+  } | null;
+  isIndependent: boolean;
 };
 
 export type LoginResponse = {
   access_token: string;
+};
+
+export type RegisterResponse = {
+  access_token: string;
+  isNewUser: boolean;
+  user: AuthUser;
 };
 
 export async function loginService(data: LoginData) {
@@ -54,12 +51,7 @@ export function googleLoginService() {
 }
 
 export async function registerService(data: RegisterData) {
-  const response = await api.post("/auth/register", data);
-  return response.data;
-}
-
-export async function updateMeService(data: UpdateMeData) {
-  const response = await api.patch<AuthUser>("/auth/me", data);
+  const response = await api.post<RegisterResponse>("/auth/register", data);
   return response.data;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Copy, Loader2, MailPlus, Search, Share2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -13,16 +14,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { listArtistsService } from "@/services/artists.service";
+import {
+  getMyArtistProfileService,
+  listArtistsService,
+} from "@/services/artists.service";
 import { createInviteService } from "@/services/invites.service";
-import { Artist } from "@/types/artist";
 import { canInviteArtists, canManageArtists } from "@/utils/auth-permissions";
 
 export default function ArtistsPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const [artists, setArtists] = useState<Artist[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -32,6 +33,21 @@ export default function ArtistsPage() {
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
   const canInviteArtist = canInviteArtists(user);
 
+  const {
+    data: artists = [],
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["artists"],
+    queryFn: listArtistsService,
+    enabled: !!user && canManageArtists(user),
+  });
+  const { data: myArtistProfile } = useQuery({
+    queryKey: ["artists", "me"],
+    queryFn: getMyArtistProfileService,
+    enabled: !!user?.artistId && canManageArtists(user),
+  });
+
   useEffect(() => {
     if (!user) return;
 
@@ -39,35 +55,38 @@ export default function ArtistsPage() {
       router.replace("/events");
       return;
     }
+  }, [router, user]);
 
-    async function loadArtists() {
-      try {
-        const data = await listArtistsService();
-        setArtists(data);
-      } catch (error) {
-        console.error("Erro ao buscar artistas:", error);
-      } finally {
-        setIsLoading(false);
-      }
+  const artistsWithCurrentProfile = useMemo(() => {
+    if (!myArtistProfile) return artists;
+
+    const hasCurrentArtist = artists.some(
+      (artist) => artist.id === myArtistProfile.id,
+    );
+
+    if (hasCurrentArtist) {
+      return artists.map((artist) =>
+        artist.id === myArtistProfile.id ? myArtistProfile : artist,
+      );
     }
 
-    loadArtists();
-  }, [router, user]);
+    return [...artists, myArtistProfile];
+  }, [artists, myArtistProfile]);
 
   const filteredArtists = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return artists;
+      return artistsWithCurrentProfile;
     }
 
-    return artists.filter((artist) =>
+    return artistsWithCurrentProfile.filter((artist) =>
       [artist.name, artist.stageName ?? "", artist.email, artist.phone ?? ""]
         .join(" ")
         .toLowerCase()
         .includes(normalizedQuery),
     );
-  }, [artists, query]);
+  }, [artistsWithCurrentProfile, query]);
 
   async function handleCreateInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -266,6 +285,10 @@ export default function ArtistsPage() {
       {isLoading ? (
         <div className="orbit-shell rounded-lg p-6 text-muted-foreground">
           Carregando artistas...
+        </div>
+      ) : isError ? (
+        <div className="orbit-shell rounded-lg p-6 text-muted-foreground">
+          Não foi possível carregar os artistas.
         </div>
       ) : filteredArtists.length === 0 ? (
         <div className="orbit-shell rounded-lg p-6 text-muted-foreground">

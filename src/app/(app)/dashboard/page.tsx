@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getMyArtistProfileService } from "@/services/artists.service";
 import { getDashboardSummaryService } from "@/services/events.service";
 import { formatEventDate } from "@/utils/formatEventDate";
+import { getArtistDisplayName } from "@/utils/artist";
 import {
   canCreateEvent,
   isAgencyArtist,
@@ -27,13 +28,12 @@ export default function DashboardPage() {
   const [dashboardSummary, setDashboardSummary] =
     useState<DashboardSummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const isArtistFromAgency = isAgencyArtist(user);
   const isIndependentArtistUser = isIndependentArtist(user);
   const isArtistDashboard = isArtistFromAgency || isIndependentArtistUser;
-  const dashboardEyebrow = isIndependentArtistUser
-    ? undefined
-    : (user?.organizationName ?? "RewindJ");
+  const dashboardEyebrow = user?.organizationId
+    ? (user.organization?.name ?? user.organizationName ?? "RewindJ")
+    : "RewindJ";
 
   const { data: artistProfile } = useQuery({
     queryKey: ["artists", "me"],
@@ -42,8 +42,8 @@ export default function DashboardPage() {
   });
 
   const dashboardName = isArtistDashboard
-    ? artistProfile?.stageName || artistProfile?.name || user?.name || "DJ"
-    : user?.name;
+    ? getArtistDisplayName(artistProfile, user?.name || "DJ")
+    : user?.name || "Usuário";
 
   useEffect(() => {
     async function loadDashboard() {
@@ -115,9 +115,7 @@ export default function DashboardPage() {
           icon={CalendarCheck}
           label="Eventos em negociação"
           value={
-            isLoading
-              ? "--"
-              : String(dashboardSummary?.negotiatingEvents ?? 0)
+            isLoading ? "--" : String(dashboardSummary?.negotiatingEvents ?? 0)
           }
           detail="Aguardando confirmação"
         />

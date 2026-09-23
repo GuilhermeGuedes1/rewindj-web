@@ -5,7 +5,9 @@ import { Music, Mail, Phone } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { ArtistAvatar } from "@/components/orbit/artist-avatar";
 import type { Artist } from "@/types/artist";
+import { getArtistDisplayName } from "@/utils/artist";
 
 interface ArtistCardProps {
   artist: Artist;
@@ -23,14 +25,21 @@ export function ArtistCard({ artist }: ArtistCardProps) {
       <Card className="orbit-shell overflow-hidden transition-colors hover:border-primary/40">
         <CardContent className="p-5">
           <div className="mb-4 flex items-start justify-between gap-4">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold tracking-normal">
-                {artist.stageName || artist.name}
-              </h2>
+            <div className="flex min-w-0 items-center gap-3">
+              <ArtistAvatar
+                name={getArtistDisplayName(artist)}
+                imageUrl={artist.profileImageUrl}
+                className="size-12"
+              />
+              <div className="min-w-0 space-y-2">
+                <h2 className="truncate text-xl font-semibold tracking-normal">
+                  {getArtistDisplayName(artist)}
+                </h2>
 
-              <Badge variant="silver" className="w-fit">
-                {artist.name}
-              </Badge>
+                <Badge variant="silver" className="w-fit">
+                  {artist.name}
+                </Badge>
+              </div>
             </div>
 
             <Music className="size-5 text-primary" />
